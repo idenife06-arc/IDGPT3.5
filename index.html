@@ -1,495 +1,1122 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>个人负债计算器</title>
-<style>
-  :root { --radius:14px; --shadow:0 10px 24px rgba(2,12,27,.06); }
-  body[data-theme="light"]{
-    --bg:#f6f8fb; --card:#fff; --text:#17202a; --muted:#4b5b6c; --accent:#2563eb; --danger:#dc2626; --ok:#059669;
-    --field-bg:#fff; --field-fg:#0f172a; --field-border:#cfd7e3; --field-placeholder:#64748b; --table-line:#e8edf3; --chip-bg:#eef2f7;
-  }
-  body[data-theme="dark"]{
-    --bg:#0b0f14; --card:#111824; --text:#eaf1f8; --muted:#8aa0b5; --accent:#4aa3ff; --danger:#ff6b6b; --ok:#34d399;
-    --field-bg:#172436; --field-fg:#eaf1f8; --field-border:#2b3b55; --field-placeholder:#9fb2c6; --table-line:#253247; --chip-bg:#1b2431; --shadow:0 10px 30px rgba(0,0,0,.35);
-  }
-  html,body{height:100%}
-  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,PingFang SC,Noto Sans CJK SC,Helvetica Neue,Arial,"Segoe UI Emoji";background:var(--bg);color:var(--text)}
-  .wrap{max-width:1200px;margin:28px auto;padding:0 20px}
-  header h1{font-size:24px;margin:0 0 6px}
-  header p{margin:0;color:var(--muted)}
-  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 22px}
-  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
-  .k{color:var(--muted);font-size:12px}.v{font-weight:700;font-size:20px;margin-top:4px}
-  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .btn{border:none;background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;box-shadow: var(--shadow)}
-  .btn.secondary{background:#e5eaf3;color:#0f172a} body[data-theme="dark"] .btn.secondary{background:#2a3342;color:var(--text)}
-  .btn.danger{background:var(--danger);color:#fff}.btn.ghost{background:transparent;border:1px solid var(--field-border);color:var(--text)}
-  .btn.ok{background:var(--ok);color:#fff}
-  .platforms{display:flex;flex-direction:column;gap:12px}
-  details.box{background:var(--card);border-radius:var(--radius);box-shadow: var(--shadow);overflow:hidden}
-  details.box>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
-  details.box>summary::-webkit-details-marker{display:none}
-  .sum-title{display:flex;align-items:center;gap:10px}
-  .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--chip-bg);color:var(--muted)}
-  .section{padding:12px 16px 18px;border-top:1px solid var(--field-border)}
-  .form-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
-  .field{display:flex;flex-direction:column;gap:6px}
-  label{font-size:12px;color:var(--muted)}
-  input,select{background:var(--field-bg);color:var(--field-fg);border:1px solid var(--field-border);border-radius:10px;padding:10px 10px;outline:none;caret-color:var(--field-fg)}
-  input::placeholder{color:var(--field-placeholder);opacity:1}
-  select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.16)}
-  input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--field-fg);-webkit-box-shadow:0 0 0 1000px var(--field-bg) inset;box-shadow:0 0 0 1000px var(--field-bg) inset;transition:background-color 9999s ease-in-out 0s}
-  table{width:100%;border-collapse:collapse;background:var(--card)}
-  th,td{padding:8px 10px;border-bottom:1px dashed var(--table-line);text-align:right}
-  th:first-child,td:first-child{text-align:left}
-  .foot{margin:24px 0 60px;color:var(--muted);font-size:12px;text-align:center}
-  .right{text-align:right}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
-  /* 轻量确认弹窗样式 + Toast */
-  .dlg-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
-  .dlg{background:var(--card);color:var(--text);border-radius:12px;box-shadow:var(--shadow);min-width:280px;max-width:90vw;padding:16px}
-  .dlg h3{margin:0 0 8px;font-size:16px}
-  .dlg p{margin:0 0 12px;color:var(--muted)}
-  .dlg .row{display:flex;gap:8px;justify-content:flex-end}
-  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--card);color:var(--text);border:1px solid var(--field-border);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);z-index:9999}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人债务管理</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+        }
+        .hidden {
+            display: none;
+        }
+        .save-notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 1000;
+            animation: pulse 2s ease-in-out;
+        }
+        @keyframes pulse {
+            0% { opacity: 0; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.9); }
+        }
+    </style>
 </head>
-<body>
-<div class="wrap">
-  <header>
-    <h1>个人负债计算器</h1>
-    <p>支持 <b>平台 → 借据</b> 分组、统一还款日、等额本息/等额本金、年化/总利息两种录入；支持“只还利息期”。本地保存，不上传。</p>
-  </header>
-
-  <section class="grid" id="dashboard">
-    <div class="card"><div class="k">总剩余本金</div><div class="v" id="totalPrincipal">¥0.00</div></div>
-    <div class="card"><div class="k">总剩余利息（估算）</div><div class="v" id="totalInterest">¥0.00</div></div>
-    <div class="card"><div class="k">本期应还总额（估算）</div><div class="v" id="totalThisMonth">¥0.00</div></div>
-    <div class="card"><div class="k">借据数量</div><div class="v" id="loanCount">0</div></div>
-  </section>
-
-  <div class="toolbar">
-    <button class="btn" id="addPlatform">＋ 新增平台</button>
-    <button class="btn secondary" id="collapseAll">全部折叠</button>
-    <button class="btn ghost" id="resetAll" title="仅清空本地缓存，不可恢复">清空数据</button>
-    <button class="btn ok" id="saveBtn" title="手动保存">保存</button>
-    <span style="margin-left:auto;color:var(--muted);font-size:12px;">外观</span>
-    <select id="themeSelect" title="切换外观">
-      <option value="light">浅色</option><option value="dark">深色</option>
-    </select>
-  </div>
-
-  <section id="overview" class="card" style="margin:12px 0;display:none"></section>
-
-  <section class="platforms" id="platforms"></section>
-
-  <p class="foot">© 本工具不上传任何数据。选择“剩余总利息”时，通过数值求解推算月利率以匹配总利息；支持“只还利息（月）”。</p>
-</div>
-
-<!-- 平台模板 -->
-<template id="platform-tpl">
-  <details class="box" open>
-    <summary>
-      <div class="sum-title">
-        <strong class="title">未命名平台</strong>
-        <span class="pill">固定还款日：<span class="platPayDay">—</span> 日</span>
-        <span class="pill">借据数：<span class="noteCount">0</span></span>
-      </div>
-      <div class="right">
-        <span class="k">本期应还（平台合计）</span>
-        <span class="v mono platNextPay">¥0.00</span>
-      </div>
-    </summary>
-
-    <div class="section">
-      <div class="form-grid">
-        <div class="field"><label>平台/机构</label><input name="platName" placeholder="例如：Bank A / 平台A"/></div>
-        <div class="field"><label>每月固定还款日 (1-28)</label><input name="platPayDay" type="number" min="1" max="28" step="1"/></div>
-        <div class="field"><label>平台备注（可选）</label><input name="platNote" placeholder="例如：所有借据统一在15号代扣"/></div>
-        <div class="field"><label>&nbsp;</label><button class="btn" data-action="addNote">＋ 新增借据</button></div>
-        <div class="field"><label>&nbsp;</label><button class="btn danger" data-action="settlePlatform">结清（删除）</button></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
-        <div><div class="k">平台剩余本金合计</div><div class="v mono platRemainP">¥0.00</div></div>
-        <div><div class="k">平台剩余利息合计（估算）</div><div class="v mono platRemainI">¥0.00</div></div>
-        <div><div class="k">下期还款日（平台）</div><div class="v mono platNextDate">—</div></div>
-        <div><div class="k">本期应还（平台合计）</div><div class="v mono platThisMonth">¥0.00</div></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <div class="platform-notes"></div>
-    </div>
-  </details>
-</template>
-
-<!-- 借据模板 -->
-<template id="note-tpl">
-  <details class="box" open>
-    <summary>
-      <div class="sum-title">
-        <strong class="title">借据</strong>
-        <span class="pill mode">—</span>
-        <span class="pill repay">—</span>
-      </div>
-      <div class="right"><span class="k">本期应还</span><span class="v mono nextPay">¥0.00</span></div>
-    </summary>
-
-    <div class="section">
-      <div class="form-grid">
-        <div class="field"><label>借据名称（可选）</label><input name="name" placeholder="例如：2024-01 借据"/></div>
-        <div class="field"><label>当前剩余本金</label><input name="principal" type="number" min="0" step="0.01" placeholder="100000"/></div>
-        <div class="field"><label>剩余期数（月）</label><input name="months" type="number" min="1" step="1" placeholder="36"/></div>
-        <div class="field"><label>还款方式</label>
-          <select name="repayType"><option value="epi">等额本息</option><option value="epr">等额本金</option></select>
+<body class="bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        <!-- Save Notification -->
+        <div id="saveNotification" class="save-notification hidden">
+            <i class="fas fa-check-circle mr-2"></i>
+            已保存
         </div>
-        <div class="field"><label>利息录入方式</label>
-          <select name="rateMode"><option value="apr">年化利率</option><option value="total">剩余总利息</option></select>
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <i class="fas fa-chart-line text-blue-600 mr-3 text-2xl"></i>
+                <h1 class="text-3xl font-semibold text-gray-900">个人债务管理</h1>
+            </div>
+            <p class="text-gray-500 text-sm">清晰掌握每个平台的负债情况</p>
         </div>
-        <div class="field rate-apr"><label>年化利率 %</label>
-          <input name="apr" type="text" inputmode="decimal" pattern="[0-9]*[\.,]?[0-9]*" placeholder="6.8"/>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">总负债</h3>
+                <p id="totalDebt" class="text-2xl font-semibold text-gray-900">¥0.00</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">剩余利息</h3>
+                <p id="totalInterest" class="text-2xl font-semibold text-gray-900">¥0.00</p>
+            </div>
+            
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">月还款总额</h3>
+                <p id="monthlyPayment" class="text-2xl font-semibold text-gray-900">¥0.00</p>
+            </div>
         </div>
-        <div class="field rate-total" style="display:none"><label>剩余总利息</label><input name="totalInterest" type="number" min="0" step="0.01" placeholder="例如 12800"/></div>
-        <div class="field"><label>只还利息（月）（剩余）</label><input name="ioMonths" type="number" min="0" step="1" placeholder="0"/></div>
-        <div class="field"><label>只息已发生（月）（记录用）</label><input name="ioDone" type="number" min="0" step="1" placeholder="0"/></div>
-        <div class="field"><label>起算日期</label><input name="startDate" type="date"/></div>
-        <div class="field"><label>&nbsp;</label><button class="btn danger" data-action="settleNote">结清（删除）</button></div>
-      </div>
-      <div class="warn" data-warn></div>
+
+        <!-- Monthly Repayment Schedule Summary -->
+        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-200 mb-8">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-calendar-alt text-blue-600 mr-2"></i>
+                <h3 class="text-lg font-semibold text-gray-900">每月还款日汇总</h3>
+            </div>
+            <div id="monthlySummary">
+                <p class="text-gray-500 text-sm">暂无还款计划</p>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="mb-6 flex flex-wrap gap-3">
+            <button id="addPlatformBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors duration-200">
+                <i class="fas fa-plus mr-1.5"></i>
+                添加平台
+            </button>
+            <button id="addLoanBtn" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors duration-200">
+                <i class="fas fa-file-alt mr-1.5"></i>
+                添加借据
+            </button>
+        </div>
+
+        <!-- Platforms List -->
+        <div id="platformsContainer" class="space-y-4">
+            <div class="text-center py-12">
+                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-folder text-gray-400 text-2xl"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">暂无贷款平台</h3>
+                <p class="text-gray-500 text-sm">点击"添加平台"开始管理您的债务</p>
+            </div>
+        </div>
     </div>
 
-    <div class="section">
-      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
-        <div><div class="k">剩余本金</div><div class="v mono remainP">¥0.00</div></div>
-        <div><div class="k">剩余利息（估算）</div><div class="v mono remainI">¥0.00</div></div>
-        <div><div class="k">每月应还（本期）</div><div class="v mono monthPay">¥0.00</div></div>
-        <div><div class="k">下期还款日</div><div class="v mono nextDate">—</div></div>
-      </div>
-    </div>
-
-    <div class="section">
-      <details>
-        <summary><b>展开/收起 还款计划表（含只息期）</b></summary>
-        <div style="overflow:auto;margin-top:10px;">
-          <table class="mono schedule">
-            <thead><tr><th>期次</th><th>日期</th><th>当期应还</th><th>其中本金</th><th>其中利息</th><th>期末剩余本金</th></tr></thead>
-            <tbody></tbody>
-          </table>
+    <!-- Platform Form Modal -->
+    <div id="platformModal" class="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+            <div class="p-6">
+                <h2 id="platformModalTitle" class="text-xl font-semibold text-gray-900 mb-5">添加新平台</h2>
+                
+                <form id="platformForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">平台名称</label>
+                        <input type="text" id="platformName" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">还款日</label>
+                        <input type="number" id="repaymentDay" min="1" max="31" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-4">
+                        <button type="button" id="cancelPlatformBtn" class="px-4 py-2.5 text-gray-600 hover:text-gray-800 font-medium text-sm">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors">
+                            添加
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
-      </details>
     </div>
-  </details>
-</template>
 
-<script>
-'use strict';
-/* ========= 主题 ========= */
-const THEME_KEY='debt-calc-theme';
-function applyTheme(t){
-  document.body.setAttribute('data-theme',t==='dark'?'dark':'light');
-  try{ localStorage.setItem(THEME_KEY,t==='dark'?'dark':'light'); }catch(e){}
-}
-(function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY)||'light'); })();
+    <!-- Loan Form Modal -->
+    <div id="loanModal" class="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+                <h2 id="loanModalTitle" class="text-xl font-semibold text-gray-900 mb-5">添加新借据</h2>
+                
+                <form id="loanForm" class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">所属平台</label>
+                        <select id="loanPlatformId" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                            <option value="">选择平台</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">借据描述</label>
+                        <input type="text" id="loanDescription" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="例如：消费贷-2024年1月" required>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">贷款总额</label>
+                            <input type="number" id="loanTotalAmount" step="0.01" min="0.01" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">贷款期限 (月)</label>
+                            <input type="number" id="loanTotalMonths" min="1" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">已还月数</label>
+                            <input type="number" id="loanRepaidMonths" min="0" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">宽限期 (月)</label>
+                            <input type="number" id="loanGracePeriod" min="0" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">还款方式</label>
+                        <select id="loanRepaymentType" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="equal_principal_interest">等额本息</option>
+                            <option value="equal_principal">等额本金</option>
+                        </select>
+                    </div>
+                    
+                    <div class="border-t border-gray-200 pt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">输入方式</label>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="loanInputMode" value="rate" class="mr-2 w-4 h-4 text-blue-600" checked>
+                                <span class="text-sm">年化利率 (%)</span>
+                            </label>
+                            <label class="flex items-center cursor-pointer">
+                                <input type="radio" name="loanInputMode" value="interest" class="mr-2 w-4 h-4 text-blue-600">
+                                <span class="text-sm">剩余总利息 (¥)</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div id="rateInput" class="block">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">年化利率 (%)</label>
+                        <input type="number" id="loanAnnualRate" step="0.01" min="0" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div id="interestInput" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">剩余总利息 (¥)</label>
+                        <input type="number" id="loanTotalInterest" step="0.01" min="0" class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 pt-2">
+                        <button type="button" id="cancelLoanBtn" class="px-4 py-2.5 text-gray-600 hover:text-gray-800 font-medium text-sm">
+                            取消
+                        </button>
+                        <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-colors">
+                            添加
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
-/* ========= 小工具 ========= */
-const fmt = (n)=>`¥${(Number(n)||0).toFixed(2)}`;
-const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
-const uuid=(typeof crypto!=='undefined'&&crypto.randomUUID)?()=>crypto.randomUUID():()=>('id-'+Math.random().toString(16).slice(2)+Date.now());
-function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .25s linear'; setTimeout(()=>{ t.remove(); }, 280); }, 1200); }
+    <script>
+        // 数据存储
+        let platforms = [];
+        let editingPlatform = null;
+        let editingLoan = null;
+        let selectedPlatformId = null;
+        let expandedLoans = new Set();
 
-// 允许小数点/逗号/中文符号的解析（用于 APR 等）
-function parseDecimalInput(x){ if(typeof x==='number') return x; let s=(x||'').toString().trim(); s=s.replace(/％/g,'%').replace(/，/g,',').replace(/[．。]/g,'.'); s=s.replace(/\s/g,''); let core=s.replace(/[^0-9.,-]/g,''); if(core.includes(',') && !core.includes('.')) core=core.replace(/,/g,'.'); else core=core.replace(/,/g,''); const v=parseFloat(core); return isNaN(v)?0:v; }
-function parseNumber(x){ if(typeof x==='number') return x; let s=(x||'').toString().trim(); s=s.replace(/，/g,'').replace(/[\s,_]/g,'').replace(/[．。]/g,'.'); const v=parseFloat(s); return isNaN(v)?0:v; }
+        // DOM 元素
+        const saveNotification = document.getElementById('saveNotification');
+        const platformsContainer = document.getElementById('platformsContainer');
+        const platformModal = document.getElementById('platformModal');
+        const loanModal = document.getElementById('loanModal');
+        const addPlatformBtn = document.getElementById('addPlatformBtn');
+        const addLoanBtn = document.getElementById('addLoanBtn');
+        const cancelPlatformBtn = document.getElementById('cancelPlatformBtn');
+        const cancelLoanBtn = document.getElementById('cancelLoanBtn');
+        const platformForm = document.getElementById('platformForm');
+        const loanForm = document.getElementById('loanForm');
+        const loanInputModeRadios = document.querySelectorAll('input[name="loanInputMode"]');
+        const rateInput = document.getElementById('rateInput');
+        const interestInput = document.getElementById('interestInput');
+        const loanPlatformId = document.getElementById('loanPlatformId');
 
-// 自定义非阻塞确认弹窗（避免某些环境禁用 window.confirm）
-function uiConfirm(message){
-  return new Promise((resolve)=>{
-    try{ const ok = window.confirm(message); resolve(!!ok); }
-    catch(e){
-      const mask=document.createElement('div'); mask.className='dlg-mask';
-      const box=document.createElement('div'); box.className='dlg';
-      box.innerHTML=`<h3>请确认</h3><p>${message}</p><div class="row"><button class="btn secondary" data-act="no">取消</button><button class="btn danger" data-act="yes">确认</button></div>`;
-      mask.appendChild(box); document.body.appendChild(mask);
-      mask.addEventListener('click', (ev)=>{ if(ev.target===mask){ document.body.removeChild(mask); resolve(false); } });
-      box.querySelector('[data-act="no"]').addEventListener('click',()=>{ document.body.removeChild(mask); resolve(false); });
-      box.querySelector('[data-act="yes"]').addEventListener('click',()=>{ document.body.removeChild(mask); resolve(true); });
-    }
-  });
-}
+        // 工具函数
+        function showSaveNotification() {
+            saveNotification.classList.remove('hidden');
+            setTimeout(() => {
+                saveNotification.classList.add('hidden');
+            }, 2000);
+        }
 
-function nextPayDateByDay(day){
-  if(!day)return '—'; const today=new Date(); let y=today.getFullYear(),m=today.getMonth();
-  let last=new Date(y,m+1,0).getDate(); let cand=new Date(y,m,Math.min(day,Math.min(28,last)));
-  if(cand<today){ m++; if(m>11){m=0;y++} last=new Date(y,m+1,0).getDate(); cand=new Date(y,m,Math.min(day,Math.min(28,last))); }
-  return cand.toISOString().slice(0,10);
-}
-function nextPayDate(startDateStr, payDay){
-  if(payDay) return nextPayDateByDay(payDay);
-  if(!startDateStr) return '—'; const d0=new Date(startDateStr); const today=new Date();
-  let y=today.getFullYear(),m=today.getMonth(),day=d0.getDate();
-  let last=new Date(y,m+1,0).getDate(); let cand=new Date(y,m,Math.min(day,Math.min(28,last)));
-  if(cand<today){ m++; if(m>11){m=0;y++} last=new Date(y,m+1,0).getDate(); cand=new Date(y,m,Math.min(day,Math.min(28,last))); }
-  return cand.toISOString().slice(0,10);
-}
+        function formatCurrency(amount) {
+            return '¥' + parseFloat(amount).toLocaleString('zh-CN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
 
-/* ========= 贷款计算（含只息期） ========= */
-function totalInterestByRate(P,n,type,r){
-  if(r===0) return 0; let totalI=0;
-  if(type==='epr'){ let remain=P,principalMonth=P/n; for(let k=1;k<=n;k++){ const Ik=remain*r; totalI+=Ik; remain-=principalMonth; } }
-  else{ const A = P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); let remain=P;
-        for(let k=1;k<=n;k++){ const Ik=remain*r; const Mk=A-Ik; totalI+=Ik; remain=Math.max(0,remain-Mk); } }
-  return totalI;
-}
-function solveMonthlyRateByTotalInterest(P,n,type,I){
-  if(I<=0||P<=0||n<=0) return 0; let lo=0,hi=1;
-  for(let i=0;i<80;i++){ const mid=(lo+hi)/2; const It=totalInterestByRate(P,n,type,mid); if(It>I) hi=mid; else lo=mid; }
-  return (lo+hi)/2;
-}
+        // 计算函数
+        function calculateEqualPrincipalInterestSchedule(totalAmount, annualRate, totalMonths, repaidMonths, gracePeriod = 0) {
+            if (!totalAmount || !annualRate || !totalMonths || totalAmount <= 0 || annualRate <= 0) return [];
+            
+            const monthlyRate = annualRate / 100 / 12;
+            const actualPrincipalMonths = Math.max(1, totalMonths - gracePeriod);
+            const monthlyPayment = (totalAmount * monthlyRate * Math.pow(1 + monthlyRate, actualPrincipalMonths)) / 
+                                  (Math.pow(1 + monthlyRate, actualPrincipalMonths) - 1);
+            
+            let remainingBalance = totalAmount;
+            let schedule = [];
+            
+            for (let month = 1; month <= totalMonths; month++) {
+                if (month <= gracePeriod) {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    schedule.push({
+                        month: month,
+                        principal: 0,
+                        interest: interestPayment,
+                        total: interestPayment,
+                        balance: remainingBalance
+                    });
+                } else {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    const endingBalance = Math.max(0, remainingBalance - principalPayment);
+                    
+                    schedule.push({
+                        month: month,
+                        principal: principalPayment,
+                        interest: interestPayment,
+                        total: monthlyPayment,
+                        balance: endingBalance
+                    });
+                    
+                    remainingBalance = endingBalance;
+                    if (remainingBalance <= 0.01) {
+                        for (let m = month + 1; m <= totalMonths; m++) {
+                            schedule.push({
+                                month: m,
+                                principal: 0,
+                                interest: 0,
+                                total: 0,
+                                balance: 0
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            return schedule;
+        }
 
-function buildScheduleIO(P,n,type,r,ioMonths,startDate,payDay){
-  ioMonths = Math.max(0, Math.min(n, Math.floor(+ioMonths||0)));
-  const rows=[]; let remain=P;
-  // 只息期
-  for(let k=1;k<=ioMonths;k++){
-    const interest = remain*r; const principal = 0; const pay = interest; const dateStr = dateForIndex(startDate,payDay,k);
-    rows.push({k, date: dateStr, pay, principal, interest, remain});
-  }
-  const n2 = n - ioMonths;
-  if(n2>0){
-    if(type==='epr'){
-      const principalMonth = P/n2;
-      for(let j=1;j<=n2;j++){
-        const k = ioMonths + j; const interest = remain*r; const principal = principalMonth; const pay = principal + interest; remain = Math.max(0, remain-principal);
-        const dateStr = dateForIndex(startDate,payDay,k);
-        rows.push({k, date: dateStr, pay, principal, interest, remain});
-      }
-    } else {
-      const A = (r>0)? P*r*Math.pow(1+r,n2)/(Math.pow(1+r,n2)-1) : (P/n2);
-      for(let j=1;j<=n2;j++){
-        const k = ioMonths + j; const interest = remain*r; const principal = (r>0)? (A - interest) : (P/n2); const pay = (r>0)? A : principal; remain = Math.max(0, remain-principal);
-        const dateStr = dateForIndex(startDate,payDay,k);
-        rows.push({k, date: dateStr, pay, principal, interest, remain});
-      }
-    }
-  }
-  return rows;
-}
-function dateForIndex(startDate,payDay,k){
-  if(!startDate) return '—'; const d0=new Date(startDate); const y=d0.getFullYear(); const m=d0.getMonth();
-  const base=new Date(y, m+(k-1), 1); const last=new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
-  const day = payDay ? Math.max(1, Math.min(28, payDay)) : Math.min(28, d0.getDate()); base.setDate(Math.min(day,last,28)); return base.toISOString().slice(0,10);
-}
+        function calculateEqualPrincipalSchedule(totalAmount, annualRate, totalMonths, repaidMonths, gracePeriod = 0) {
+            if (!totalAmount || !annualRate || !totalMonths || totalAmount <= 0 || annualRate <= 0) return [];
+            
+            const actualPrincipalMonths = Math.max(1, totalMonths - gracePeriod);
+            const monthlyPrincipal = totalAmount / actualPrincipalMonths;
+            const monthlyRate = annualRate / 100 / 12;
+            let remainingBalance = totalAmount;
+            let schedule = [];
+            
+            for (let month = 1; month <= totalMonths; month++) {
+                if (month <= gracePeriod) {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    schedule.push({
+                        month: month,
+                        principal: 0,
+                        interest: interestPayment,
+                        total: interestPayment,
+                        balance: remainingBalance
+                    });
+                } else {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    const totalPayment = monthlyPrincipal + interestPayment;
+                    const endingBalance = Math.max(0, remainingBalance - monthlyPrincipal);
+                    
+                    schedule.push({
+                        month: month,
+                        principal: monthlyPrincipal,
+                        interest: interestPayment,
+                        total: totalPayment,
+                        balance: endingBalance
+                    });
+                    
+                    remainingBalance = endingBalance;
+                    if (remainingBalance <= 0.01) {
+                        for (let m = month + 1; m <= totalMonths; m++) {
+                            schedule.push({
+                                month: m,
+                                principal: 0,
+                                interest: 0,
+                                total: 0,
+                                balance: 0
+                            });
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            return schedule;
+        }
 
-function computeNote(note, platPayDay){
-  const P=parseNumber(note.principal)||0, n=Math.max(1,Math.floor(parseNumber(note.months)||0)), repayType=note.repayType;
-  let r;
-  if((note.rateMode||'apr')==='apr'){ r=(parseDecimalInput(note.apr)/100)/12; }
-  else { r=solveMonthlyRateByTotalInterest(P,n,repayType,parseNumber(note.totalInterest)||0); }
-  const ioM = Math.max(0, Math.min(n, Math.floor(parseNumber(note.ioMonths)||0)));
-  const schedule=buildScheduleIO(P,n,repayType,r,ioM,note.startDate,platPayDay||null);
-  const totalInterest=schedule.reduce((s,x)=>s+x.interest,0), thisMonthPay=schedule[0]?.pay||0;
-  const nextDate=nextPayDate(note.startDate, platPayDay||null);
-  return {r,schedule,totalInterest,thisMonthPay,nextDate};
-}
+        function calculateEqualPrincipalInterest(totalAmount, annualRate, totalMonths, repaidMonths, gracePeriod = 0) {
+            if (!totalAmount || !annualRate || !totalMonths) return null;
+            
+            const monthlyRate = annualRate / 100 / 12;
+            const remainingMonths = totalMonths - repaidMonths;
+            const graceMonthsRemaining = Math.max(0, gracePeriod - repaidMonths);
+            
+            if (remainingMonths <= 0) {
+                return { remainingPrincipal: 0, remainingInterest: 0, monthlyPayment: 0, remainingMonths: 0, graceMonthsRemaining: 0 };
+            }
+            
+            const actualPrincipalMonths = Math.max(1, totalMonths - gracePeriod);
+            const monthlyPayment = (totalAmount * monthlyRate * Math.pow(1 + monthlyRate, actualPrincipalMonths)) / 
+                                  (Math.pow(1 + monthlyRate, actualPrincipalMonths) - 1);
+            
+            let remainingBalance = totalAmount;
+            
+            for (let month = 1; month <= repaidMonths; month++) {
+                if (month <= gracePeriod) {
+                } else {
+                    const interestPayment = remainingBalance * monthlyRate;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    remainingBalance = Math.max(0, remainingBalance - principalPayment);
+                }
+            }
+            
+            let remainingInterest = 0;
+            let tempBalance = remainingBalance;
+            
+            for (let month = repaidMonths + 1; month <= totalMonths; month++) {
+                if (month <= gracePeriod) {
+                    remainingInterest += tempBalance * monthlyRate;
+                } else {
+                    const interestPayment = tempBalance * monthlyRate;
+                    remainingInterest += interestPayment;
+                    const principalPayment = monthlyPayment - interestPayment;
+                    tempBalance = Math.max(0, tempBalance - principalPayment);
+                }
+            }
+            
+            let currentMonthlyPayment = 0;
+            if (repaidMonths + 1 <= gracePeriod) {
+                currentMonthlyPayment = remainingBalance * monthlyRate;
+            } else {
+                currentMonthlyPayment = monthlyPayment;
+            }
+            
+            return {
+                remainingPrincipal: Math.max(0, remainingBalance),
+                remainingInterest: Math.max(0, remainingInterest),
+                monthlyPayment: currentMonthlyPayment,
+                remainingMonths: remainingMonths,
+                graceMonthsRemaining: graceMonthsRemaining
+            };
+        }
 
-/* ========= 状态与存储 ========= */
-const STORE_KEY='debt-calc-v4'; // 保持与上一版一致，避免丢数据
-const FIRST_RUN_KEY='debt-calc-first-run';
-const state={platforms:[]};
-function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('保存失败',e); } }
-function load(){
-  try{
-    const raw=localStorage.getItem(STORE_KEY);
-    if(raw){ Object.assign(state, JSON.parse(raw)); return; }
-    if(!localStorage.getItem(FIRST_RUN_KEY)){
-      const pid=uuid();
-      state.platforms=[{id:pid,name:'示例平台',payDay:'',note:'',notes:[{id:uuid(),name:'示例借据',principal:100000,months:36,repayType:'epi',rateMode:'apr',apr:6.8,totalInterest:'',ioMonths:0,ioDone:0,startDate:new Date().toISOString().slice(0,10)}]}];
-      localStorage.setItem(FIRST_RUN_KEY,'1'); save();
-    }
-  }catch(e){ console.warn('读取失败',e); }
-}
+        function calculateEqualPrincipal(totalAmount, annualRate, totalMonths, repaidMonths, gracePeriod = 0) {
+            if (!totalAmount || !annualRate || !totalMonths) return null;
+            
+            const actualPrincipalMonths = Math.max(1, totalMonths - gracePeriod);
+            const monthlyPrincipal = totalAmount / actualPrincipalMonths;
+            const monthlyRate = annualRate / 100 / 12;
+            const remainingMonths = totalMonths - repaidMonths;
+            const graceMonthsRemaining = Math.max(0, gracePeriod - repaidMonths);
+            
+            if (remainingMonths <= 0) {
+                return { remainingPrincipal: 0, remainingInterest: 0, currentMonthlyPayment: 0, remainingMonths: 0, graceMonthsRemaining: 0 };
+            }
+            
+            let remainingBalance = totalAmount;
+            
+            for (let month = 1; month <= repaidMonths; month++) {
+                if (month <= gracePeriod) {
+                } else {
+                    remainingBalance = Math.max(0, remainingBalance - monthlyPrincipal);
+                }
+            }
+            
+            let remainingInterest = 0;
+            let tempBalance = remainingBalance;
+            
+            for (let month = repaidMonths + 1; month <= totalMonths; month++) {
+                remainingInterest += tempBalance * monthlyRate;
+                if (month > gracePeriod) {
+                    tempBalance = Math.max(0, tempBalance - monthlyPrincipal);
+                }
+            }
+            
+            let currentMonthlyPayment = 0;
+            if (repaidMonths + 1 <= gracePeriod) {
+                currentMonthlyPayment = remainingBalance * monthlyRate;
+            } else {
+                currentMonthlyPayment = monthlyPrincipal + (remainingBalance * monthlyRate);
+            }
+            
+            return {
+                remainingPrincipal: Math.max(0, remainingBalance),
+                remainingInterest: Math.max(0, remainingInterest),
+                currentMonthlyPayment: currentMonthlyPayment,
+                remainingMonths: remainingMonths,
+                graceMonthsRemaining: graceMonthsRemaining
+            };
+        }
 
-/* ========= CRUD ========= */
-function addPlatform(data){ if(!data) data={}; state.platforms.push(Object.assign({id:uuid(),name:'',payDay:'',note:'',notes:[]},data)); save(); safeRender(); }
-function removePlatform(id){ const i=state.platforms.findIndex(x=>x.id===id); if(i>=0){ state.platforms.splice(i,1); save(); safeRender(); } }
-function addNote(platId,data){ if(!data) data={}; const p=state.platforms.find(x=>x.id===platId); if(!p) return; p.notes.push(Object.assign({id:uuid(),name:'',principal:'',months:'',repayType:'epi',rateMode:'apr',apr:'',totalInterest:'',ioMonths:'',ioDone:'',startDate:''},data)); save(); safeRender(); }
-function removeNote(platId,noteId){ const p=state.platforms.find(x=>x.id===platId); if(!p) return; const i=p.notes.findIndex(n=>n.id===noteId); if(i>=0){ p.notes.splice(i,1); save(); safeRender(); } }
+        // 计算汇总
+        function getPlatformSummary(platform) {
+            const totalPrincipal = platform.loans.reduce((sum, loan) => {
+                if (loan.inputMode === 'interest') {
+                    return sum + loan.totalAmount;
+                } else {
+                    const calculation = loan.repaymentType === 'equal_principal_interest' 
+                        ? calculateEqualPrincipalInterest(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod)
+                        : calculateEqualPrincipal(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod);
+                    return sum + (calculation?.remainingPrincipal || 0);
+                }
+            }, 0);
 
-/* ========= 输入体验 ========= */
-let raf=null,lastFocus=null,isComposing=false;
-function scheduleRender(){ if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{raf=null; render();}); }
-function onChangePlatField(id,key,value,el){ const p=state.platforms.find(x=>x.id===id); if(!p) return; p[key]=value; save(); lastFocus={scope:'plat',id,name:key,pos: typeof el?.selectionStart==='number'?el.selectionStart:null}; scheduleRender(); }
-function onChangeNoteField(platId,noteId,key,value,el){ const p=state.platforms.find(x=>x.id===platId); if(!p) return; const n=p.notes.find(t=>t.id===noteId); if(!n) return; n[key]=value; save(); lastFocus={scope:'note',platId,id:noteId,name:key,pos: typeof el?.selectionStart==='number'?el.selectionStart:null}; scheduleRender(); }
+            const totalInterest = platform.loans.reduce((sum, loan) => {
+                if (loan.inputMode === 'interest') {
+                    return sum + loan.totalInterest;
+                } else {
+                    const calculation = loan.repaymentType === 'equal_principal_interest' 
+                        ? calculateEqualPrincipalInterest(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod)
+                        : calculateEqualPrincipal(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod);
+                    return sum + (calculation?.remainingInterest || 0);
+                }
+            }, 0);
 
-/* ========= 渲染 ========= */
-function render(){
-  const host=document.getElementById('platforms'); if(!host){ console.warn('missing #platforms'); return; } host.innerHTML='';
-  let totalP=0,totalI=0,totalThis=0,countNotes=0;
-  const overviewRows=[];
+            const totalMonthlyPayment = platform.loans.reduce((sum, loan) => {
+                if (loan.inputMode === 'interest') {
+                    const remainingMonths = loan.totalMonths - loan.repaidMonths;
+                    return sum + (remainingMonths > 0 ? (loan.totalAmount + loan.totalInterest) / remainingMonths : 0);
+                } else {
+                    const calculation = loan.repaymentType === 'equal_principal_interest' 
+                        ? calculateEqualPrincipalInterest(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod)
+                        : calculateEqualPrincipal(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod);
+                    return sum + (calculation?.monthlyPayment || calculation?.currentMonthlyPayment || 0);
+                }
+            }, 0);
 
-  state.platforms.forEach(plat=>{
-    const tpl=document.getElementById('platform-tpl'); if(!tpl){ return; }
-    const node=tpl.content.firstElementChild.cloneNode(true);
-    node.setAttribute('data-plat-id',plat.id);
-    const $=sel=>node.querySelector(sel), set=(name,val)=>{ const el=node.querySelector(`[name="${name}"]`); if(el) el.value=val??''; };
+            const maxRemainingMonths = Math.max(...platform.loans.map(loan => {
+                if (loan.inputMode === 'interest') {
+                    return loan.totalMonths - loan.repaidMonths;
+                } else {
+                    const calculation = loan.repaymentType === 'equal_principal_interest' 
+                        ? calculateEqualPrincipalInterest(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod)
+                        : calculateEqualPrincipal(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod);
+                    return calculation?.remainingMonths || 0;
+                }
+            }), 0);
 
-    set('platName',plat.name); set('platPayDay',plat.payDay); set('platNote',plat.note);
-    const title=$('.title'); if(title) title.textContent=plat.name||'未命名平台';
-    const ppd=$('.platPayDay'); if(ppd) ppd.textContent=plat.payDay||'—';
+            return { totalPrincipal, totalInterest, totalMonthlyPayment, maxRemainingMonths };
+        }
 
-    let platRemainP=0,platRemainI=0,platThisMonth=0;
-    let notesHost = node.querySelector('.platform-notes'); if(!notesHost){ notesHost=document.createElement('div'); notesHost.className='platform-notes'; node.appendChild(notesHost); }
-    notesHost.innerHTML='';
+        function getTotalDebt() {
+            return platforms.reduce((sum, platform) => {
+                const summary = getPlatformSummary(platform);
+                return sum + summary.totalPrincipal;
+            }, 0);
+        }
 
-    (plat.notes||[]).forEach(note=>{
-      const ntpl=document.getElementById('note-tpl'); if(!ntpl) return;
-      const nn=ntpl.content.firstElementChild.cloneNode(true);
-      nn.setAttribute('data-note-id',note.id);
-      const $$=sel=>nn.querySelector(sel), setN=(name,val)=>{ const el=nn.querySelector(`[name="${name}"]`); if(el) el.value=val??''; };
+        function getTotalRemainingInterest() {
+            return platforms.reduce((sum, platform) => {
+                const summary = getPlatformSummary(platform);
+                return sum + summary.totalInterest;
+            }, 0);
+        }
 
-      setN('name',note.name); setN('principal',note.principal); setN('months',note.months); setN('ioMonths',note.ioMonths); setN('ioDone',note.ioDone);
-      setN('repayType',note.repayType||'epi'); setN('rateMode',note.rateMode||'apr'); setN('apr',note.apr); setN('totalInterest',note.totalInterest); setN('startDate',note.startDate);
+        function getTotalMonthlyPayment() {
+            return platforms.reduce((sum, platform) => {
+                const summary = getPlatformSummary(platform);
+                return sum + summary.totalMonthlyPayment;
+            }, 0);
+        }
 
-      const toggleBoxes=()=>{ const isAPR=(nn.querySelector('[name="rateMode"]').value==='apr'); const ra=nn.querySelector('.rate-apr'); const rt=nn.querySelector('.rate-total'); if(ra) ra.style.display=isAPR?'':'none'; if(rt) rt.style.display=isAPR?'none':''; };
-      toggleBoxes();
+        function getMonthlyRepaymentSummary() {
+            const repaymentMap = new Map();
+            
+            platforms.forEach(platform => {
+                const repaymentDay = platform.repaymentDay;
+                const summary = getPlatformSummary(platform);
+                
+                if (summary.totalMonthlyPayment > 0) {
+                    if (!repaymentMap.has(repaymentDay)) {
+                        repaymentMap.set(repaymentDay, []);
+                    }
+                    repaymentMap.get(repaymentDay).push({
+                        platformName: platform.name,
+                        amount: summary.totalMonthlyPayment
+                    });
+                }
+            });
+            
+            return Array.from(repaymentMap.entries())
+                .sort((a, b) => a[0] - b[0])
+                .map(([day, platforms]) => ({
+                    day,
+                    platforms,
+                    total: platforms.reduce((sum, p) => sum + p.amount, 0)
+                }));
+        }
 
-      const warn=$$('[data-warn]'); if(warn) warn.textContent='';
-      let c={r:0,schedule:[],totalInterest:0,thisMonthPay:0,nextDate:'—'};
-      try{ const principal=parseNumber(note.principal), months=parseNumber(note.months); if(principal>0&&months>0){ c=computeNote(note, plat.payDay?+plat.payDay:null); } }
-      catch(e){ if(warn) warn.textContent='计算出错：'+e.message; }
+        // UI 更新函数
+        function updateSummary() {
+            document.getElementById('totalDebt').textContent = formatCurrency(getTotalDebt());
+            document.getElementById('totalInterest').textContent = formatCurrency(getTotalRemainingInterest());
+            document.getElementById('monthlyPayment').textContent = formatCurrency(getTotalMonthlyPayment());
+        }
 
-      platRemainP+=(parseNumber(note.principal)||0); platRemainI+=c.totalInterest||0; platThisMonth+=c.thisMonthPay||0;
-      totalP+=(parseNumber(note.principal)||0); totalI+=c.totalInterest||0; totalThis+=c.thisMonthPay||0; countNotes++;
+        function updateMonthlySummary() {
+            const monthlySummary = document.getElementById('monthlySummary');
+            const summaryData = getMonthlyRepaymentSummary();
+            
+            if (summaryData.length > 0) {
+                let html = '';
+                summaryData.forEach(item => {
+                    html += `
+                        <div class="border-b border-gray-100 pb-4 last:border-b-0 last:pb-0">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm font-medium text-gray-900">每月 ${item.day} 号</span>
+                                <span class="text-lg font-semibold text-blue-600">${formatCurrency(item.total)}</span>
+                            </div>
+                            <div class="space-y-1">
+                    `;
+                    item.platforms.forEach(platform => {
+                        html += `
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span>${platform.platformName}</span>
+                                <span>${formatCurrency(platform.amount)}</span>
+                            </div>
+                        `;
+                    });
+                    html += `
+                            </div>
+                        </div>
+                    `;
+                });
+                monthlySummary.innerHTML = html;
+            } else {
+                monthlySummary.innerHTML = '<p class="text-gray-500 text-sm">暂无还款计划</p>';
+            }
+        }
 
-      const t1=nn.querySelector('.title'); if(t1) t1.textContent=note.name||'借据';
-      const t2=nn.querySelector('.mode'); if(t2) t2.textContent=(note.rateMode==='total'?'按剩余总利息':'按年化利率');
-      const t3=nn.querySelector('.repay'); if(t3) t3.textContent=(note.repayType==='epr'?'等额本金':'等额本息');
-      const t4=nn.querySelector('.nextPay'); if(t4) t4.textContent=fmt(c.thisMonthPay);
-      const rp=nn.querySelector('.remainP'); if(rp) rp.textContent=fmt(parseNumber(note.principal)||0);
-      const ri=nn.querySelector('.remainI'); if(ri) ri.textContent=fmt(c.totalInterest||0);
-      const mp=nn.querySelector('.monthPay'); if(mp) mp.textContent=fmt(c.thisMonthPay||0);
-      const nd=nn.querySelector('.nextDate'); if(nd) nd.textContent=c.nextDate||'—';
+        function updatePlatformSelect() {
+            loanPlatformId.innerHTML = '<option value="">选择平台</option>';
+            platforms.forEach(platform => {
+                const option = document.createElement('option');
+                option.value = platform.id;
+                option.textContent = platform.name;
+                loanPlatformId.appendChild(option);
+            });
+        }
 
-      const tbody=nn.querySelector('.schedule tbody'); if(tbody){ tbody.innerHTML=''; c.schedule.forEach(row=>{ const tr=document.createElement('tr'); [row.k,row.date,fmt(row.pay),fmt(row.principal),fmt(row.interest),fmt(row.remain)].forEach(t=>{ const td=document.createElement('td'); td.textContent=t; tr.appendChild(td); }); tbody.appendChild(tr); }); }
+        function renderPlatforms() {
+            if (platforms.length === 0) {
+                platformsContainer.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-folder text-gray-400 text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">暂无贷款平台</h3>
+                        <p class="text-gray-500 text-sm">点击"添加平台"开始管理您的债务</p>
+                    </div>
+                `;
+                return;
+            }
 
-      // 输入绑定
-      nn.querySelectorAll('input,select').forEach(el=>{
-        el.addEventListener('compositionstart',()=>{isComposing=true;});
-        el.addEventListener('compositionend',e=>{isComposing=false; const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
-        el.addEventListener('input',e=>{ if(isComposing) return; const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
-        el.addEventListener('change',e=>{ const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
-      });
-      nn.querySelector('[name="rateMode"]').addEventListener('change',toggleBoxes);
+            let html = '';
+            platforms.forEach(platform => {
+                const summary = getPlatformSummary(platform);
+                const isExpanded = selectedPlatformId === platform.id;
+                
+                html += `
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden" data-platform-id="${platform.id}">
+                        <div class="p-5 cursor-pointer hover:bg-gray-50 transition-colors platform-header">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center min-w-0">
+                                    <i class="fas fa-chevron-${isExpanded ? 'down' : 'right'} text-${isExpanded ? 'blue-600' : 'gray-400'} mr-3 flex-shrink-0"></i>
+                                    <i class="fas fa-folder text-blue-600 mr-3 flex-shrink-0"></i>
+                                    <div class="min-w-0">
+                                        <h3 class="text-lg font-semibold text-gray-900 truncate">${platform.name}</h3>
+                                        <p class="text-sm text-gray-500">每月 ${platform.repaymentDay} 号还款</p>
+                                    </div>
+                                </div>
+                                <div class="text-right flex-shrink-0">
+                                    <div class="text-lg font-semibold text-gray-900">${formatCurrency(summary.totalPrincipal)}</div>
+                                    <div class="text-sm text-gray-500">${platform.loans.length} 笔 • 月还 ${formatCurrency(summary.totalMonthlyPayment)}</div>
+                                </div>
+                            </div>
+                        </div>
+                `;
+                
+                if (isExpanded) {
+                    html += `
+                        <div class="bg-gray-50 px-5 py-4 border-t border-gray-200">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <span class="text-gray-500">剩余本金</span>
+                                    <div class="font-semibold text-gray-900 mt-1">${formatCurrency(summary.totalPrincipal)}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">剩余利息</span>
+                                    <div class="font-semibold text-gray-900 mt-1">${formatCurrency(summary.totalInterest)}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">月还款额</span>
+                                    <div class="font-semibold text-gray-900 mt-1">${formatCurrency(summary.totalMonthlyPayment)}</div>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">剩余期数</span>
+                                    <div class="font-semibold text-gray-900 mt-1">${summary.maxRemainingMonths} 个月</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Loans table
+                    if (platform.loans.length > 0) {
+                        html += '<div class="border-t border-gray-200"><div class="overflow-x-auto"><table class="w-full"><thead class="bg-gray-50"><tr><th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">借据</th><th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">剩余本金</th><th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">月还款</th><th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">剩余月数</th><th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th></tr></thead><tbody class="divide-y divide-gray-200">';
+                        
+                        platform.loans.forEach(loan => {
+                            let remainingPrincipal, monthlyPayment, remainingMonths, graceMonthsRemaining;
+                            
+                            if (loan.inputMode === 'interest') {
+                                remainingPrincipal = loan.totalAmount;
+                                remainingMonths = loan.totalMonths - loan.repaidMonths;
+                                monthlyPayment = remainingMonths > 0 ? (loan.totalAmount + loan.totalInterest) / remainingMonths : 0;
+                                graceMonthsRemaining = Math.max(0, loan.gracePeriod - loan.repaidMonths);
+                            } else {
+                                const calculation = loan.repaymentType === 'equal_principal_interest'
+                                    ? calculateEqualPrincipalInterest(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod)
+                                    : calculateEqualPrincipal(loan.totalAmount, loan.annualRate, loan.totalMonths, loan.repaidMonths, loan.gracePeriod);
+                                
+                                remainingPrincipal = calculation?.remainingPrincipal || 0;
+                                monthlyPayment = calculation?.monthlyPayment || calculation?.currentMonthlyPayment || 0;
+                                remainingMonths = calculation?.remainingMonths || 0;
+                                graceMonthsRemaining = calculation?.graceMonthsRemaining || 0;
+                            }
+                            
+                            const isLoanExpanded = expandedLoans.has(loan.id);
+                            
+                            html += `
+                                <tr class="hover:bg-gray-50 cursor-pointer loan-row" data-loan-id="${loan.id}">
+                                    <td class="px-5 py-4">
+                                        <div class="flex items-center">
+                                            <i class="fas fa-chevron-${isLoanExpanded ? 'down' : 'right'} text-gray-400 mr-2 flex-shrink-0"></i>
+                                            <div class="min-w-0">
+                                                <div class="text-sm font-medium text-gray-900 truncate">${loan.description}</div>
+                                                <div class="text-xs text-gray-500">
+                                                    ${loan.repaymentType === 'equal_principal_interest' ? '等额本息' : '等额本金'}
+                                                    ${loan.gracePeriod > 0 ? ` · 宽限期${loan.gracePeriod}月` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-5 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">${formatCurrency(remainingPrincipal)}</div>
+                                    </td>
+                                    <td class="px-5 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">${formatCurrency(monthlyPayment)}</div>
+                                        ${graceMonthsRemaining > 0 ? `<div class="text-xs text-gray-500">(${graceMonthsRemaining}月宽限)</div>` : ''}
+                                    </td>
+                                    <td class="px-5 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">${remainingMonths} 个月</div>
+                                    </td>
+                                    <td class="px-5 py-4 whitespace-nowrap">
+                                        <div class="flex space-x-2">
+                                            <button class="edit-loan-btn text-gray-600 hover:text-gray-900 p-1" data-platform-id="${platform.id}" data-loan-id="${loan.id}">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="delete-loan-btn text-red-600 hover:text-red-800 p-1 flex items-center text-sm" data-platform-id="${platform.id}" data-loan-id="${loan.id}">
+                                                <i class="fas fa-trash mr-1"></i>结清
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                            
+                            if (isLoanExpanded) {
+                                let schedule = [];
+                                if (loan.inputMode === 'interest') {
+                                    schedule = generateScheduleFromTotalInterest(
+                                        loan.totalAmount,
+                                        loan.totalInterest,
+                                        loan.totalMonths,
+                                        loan.repaidMonths,
+                                        loan.gracePeriod
+                                    );
+                                } else {
+                                    schedule = loan.repaymentType === 'equal_principal_interest'
+                                        ? calculateEqualPrincipalInterestSchedule(
+                                            loan.totalAmount,
+                                            loan.annualRate,
+                                            loan.totalMonths,
+                                            loan.repaidMonths,
+                                            loan.gracePeriod
+                                        )
+                                        : calculateEqualPrincipalSchedule(
+                                            loan.totalAmount,
+                                            loan.annualRate,
+                                            loan.totalMonths,
+                                            loan.repaidMonths,
+                                            loan.gracePeriod
+                                        );
+                                }
+                                
+                                if (schedule.length === 0 && loan.totalAmount > 0) {
+                                    schedule = [];
+                                    for (let i = 1; i <= Math.min(loan.totalMonths, 8); i++) {
+                                        schedule.push({
+                                            month: i,
+                                            principal: 0,
+                                            interest: 0,
+                                            total: 0,
+                                            balance: loan.totalAmount
+                                        });
+                                    }
+                                }
+                                
+                                html += `<tr class="loan-detail-row"><td colspan="5" class="px-5 py-4 bg-gray-50"><div class="overflow-x-auto"><div class="flex items-center justify-between mb-3"><h4 class="text-sm font-medium text-gray-900">月度还款明细</h4>${loan.gracePeriod > 0 ? `<span class="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded">前${loan.gracePeriod}月宽限期</span>` : ''}</div><div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="bg-white border-b border-gray-200"><th class="px-3 py-2 text-left text-gray-500">期数</th><th class="px-3 py-2 text-left text-gray-500">本金</th><th class="px-3 py-2 text-left text-gray-500">利息</th><th class="px-3 py-2 text-left text-gray-500">月供</th><th class="px-3 py-2 text-left text-gray-500">剩余本金</th></tr></thead><tbody>`;
+                                
+                                schedule.slice(0, 8).forEach((item, index) => {
+                                    html += `
+                                        <tr class="border-b border-gray-100 hover:bg-gray-100">
+                                            <td class="px-3 py-2 text-gray-900">
+                                                ${item.month}
+                                                ${item.month <= loan.gracePeriod ? '<span class="text-blue-600 ml-1">(宽限)</span>' : ''}
+                                            </td>
+                                            <td class="px-3 py-2 text-green-600">${formatCurrency(item.principal)}</td>
+                                            <td class="px-3 py-2 text-orange-600">${formatCurrency(item.interest)}</td>
+                                            <td class="px-3 py-2 text-blue-600 font-medium">${formatCurrency(item.total)}</td>
+                                            <td class="px-3 py-2 text-gray-600">${formatCurrency(Math.max(0, item.balance))}</td>
+                                        </tr>
+                                    `;
+                                });
+                                
+                                html += `</tbody></table></div>${schedule.length > 8 ? `<p class="text-xs text-gray-500 mt-2">显示前8期，共${schedule.length}期</p>` : ''}</div></td></tr>`;
+                            }
+                        });
+                        
+                        html += '</tbody></table></div>';
+                        
+                        // Platform actions
+                        html += `
+                            <div class="p-4 bg-gray-50 flex justify-end space-x-3">
+                                <button class="add-loan-to-platform-btn text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center" data-platform-id="${platform.id}">
+                                    <i class="fas fa-plus mr-1"></i>添加借据
+                                </button>
+                                <button class="edit-platform-btn text-gray-600 hover:text-gray-800 font-medium text-sm" data-platform-id="${platform.id}">
+                                    编辑
+                                </button>
+                                <button class="delete-platform-btn text-red-600 hover:text-red-800 font-medium text-sm flex items-center" data-platform-id="${platform.id}">
+                                    <i class="fas fa-trash mr-1"></i>结清(删除)
+                                </button>
+                            </div>
+                        `;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                html += '</div>';
+            });
+            
+            platformsContainer.innerHTML = html;
+            
+            // Add event listeners
+            document.querySelectorAll('.platform-header').forEach(header => {
+                header.addEventListener('click', (e) => {
+                    const platformId = parseInt(e.currentTarget.closest('[data-platform-id]').dataset.platformId);
+                    selectedPlatformId = selectedPlatformId === platformId ? null : platformId;
+                    renderPlatforms();
+                    updateSummary();
+                    updateMonthlySummary();
+                });
+            });
+            
+            document.querySelectorAll('.loan-row').forEach(row => {
+                row.addEventListener('click', (e) => {
+                    if (e.target.closest('.edit-loan-btn') || e.target.closest('.delete-loan-btn')) {
+                        return;
+                    }
+                    const loanId = parseInt(e.currentTarget.dataset.loanId);
+                    if (expandedLoans.has(loanId)) {
+                        expandedLoans.delete(loanId);
+                    } else {
+                        expandedLoans.add(loanId);
+                    }
+                    renderPlatforms();
+                });
+            });
+            
+            document.querySelectorAll('.edit-platform-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const platformId = parseInt(e.currentTarget.dataset.platformId);
+                    const platform = platforms.find(p => p.id === platformId);
+                    editingPlatform = platformId;
+                    document.getElementById('platformModalTitle').textContent = '编辑平台';
+                    document.getElementById('platformName').value = platform.name;
+                    document.getElementById('repaymentDay').value = platform.repaymentDay;
+                    platformModal.classList.remove('hidden');
+                });
+            });
+            
+            document.querySelectorAll('.delete-platform-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const platformId = parseInt(e.currentTarget.dataset.platformId);
+                    platforms = platforms.filter(p => p.id !== platformId);
+                    if (selectedPlatformId === platformId) {
+                        selectedPlatformId = null;
+                    }
+                    renderPlatforms();
+                    updateSummary();
+                    updateMonthlySummary();
+                    updatePlatformSelect();
+                    showSaveNotification();
+                });
+            });
+            
+            document.querySelectorAll('.add-loan-to-platform-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const platformId = parseInt(e.currentTarget.dataset.platformId);
+                    document.getElementById('loanPlatformId').value = platformId;
+                    loanModal.classList.remove('hidden');
+                });
+            });
+            
+            document.querySelectorAll('.edit-loan-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const platformId = parseInt(e.currentTarget.dataset.platformId);
+                    const loanId = parseInt(e.currentTarget.dataset.loanId);
+                    const platform = platforms.find(p => p.id === platformId);
+                    const loan = platform.loans.find(l => l.id === loanId);
+                    editingLoan = { platformId, loanId };
+                    document.getElementById('loanModalTitle').textContent = '编辑借据';
+                    document.getElementById('loanPlatformId').value = platformId;
+                    document.getElementById('loanDescription').value = loan.description;
+                    document.getElementById('loanTotalAmount').value = loan.totalAmount;
+                    document.getElementById('loanTotalMonths').value = loan.totalMonths;
+                    document.getElementById('loanRepaidMonths').value = loan.repaidMonths || 0;
+                    document.getElementById('loanGracePeriod').value = loan.gracePeriod || 0;
+                    document.getElementById('loanRepaymentType').value = loan.repaymentType;
+                    
+                    if (loan.inputMode === 'rate') {
+                        document.querySelector('input[name="loanInputMode"][value="rate"]').checked = true;
+                        rateInput.classList.remove('hidden');
+                        interestInput.classList.add('hidden');
+                        document.getElementById('loanAnnualRate').value = loan.annualRate;
+                    } else {
+                        document.querySelector('input[name="loanInputMode"][value="interest"]').checked = true;
+                        rateInput.classList.add('hidden');
+                        interestInput.classList.remove('hidden');
+                        document.getElementById('loanTotalInterest').value = loan.totalInterest;
+                    }
+                    
+                    loanModal.classList.remove('hidden');
+                });
+            });
+            
+            document.querySelectorAll('.delete-loan-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const platformId = parseInt(e.currentTarget.dataset.platformId);
+                    const loanId = parseInt(e.currentTarget.dataset.loanId);
+                    platforms = platforms.map(platform => {
+                        if (platform.id === platformId) {
+                            return {
+                                ...platform,
+                                loans: platform.loans.filter(loan => loan.id !== loanId)
+                            };
+                        }
+                        return platform;
+                    });
+                    renderPlatforms();
+                    updateSummary();
+                    updateMonthlySummary();
+                    showSaveNotification();
+                });
+            });
+        }
 
-      notesHost.appendChild(nn);
-    });
+        function generateScheduleFromTotalInterest(totalAmount, totalInterest, totalMonths, repaidMonths, gracePeriod = 0) {
+            if (totalAmount <= 0 || totalMonths <= 0) return [];
+            
+            const graceMonths = Math.min(gracePeriod, totalMonths);
+            const normalMonths = Math.max(0, totalMonths - gracePeriod);
+            
+            let schedule = [];
+            let remainingBalance = totalAmount;
+            
+            const graceInterest = totalInterest * (graceMonths / Math.max(1, totalMonths));
+            const normalInterest = totalInterest - graceInterest;
+            
+            for (let month = 1; month <= totalMonths; month++) {
+                if (month <= gracePeriod) {
+                    const monthlyInterest = graceMonths > 0 ? graceInterest / graceMonths : 0;
+                    schedule.push({
+                        month: month,
+                        principal: 0,
+                        interest: monthlyInterest,
+                        total: monthlyInterest,
+                        balance: remainingBalance
+                    });
+                } else {
+                    const monthlyPrincipal = normalMonths > 0 ? totalAmount / normalMonths : 0;
+                    const monthlyInterest = normalMonths > 0 ? normalInterest / normalMonths : 0;
+                    const endingBalance = Math.max(0, remainingBalance - monthlyPrincipal);
+                    
+                    schedule.push({
+                        month: month,
+                        principal: monthlyPrincipal,
+                        interest: monthlyInterest,
+                        total: monthlyPrincipal + monthlyInterest,
+                        balance: endingBalance
+                    });
+                    remainingBalance = endingBalance;
+                }
+            }
+            
+            return schedule;
+        }
 
-    const c1=node.querySelector('.noteCount'); if(c1) c1.textContent=String(plat.notes?.length||0);
-    const c2=node.querySelector('.platRemainP'); if(c2) c2.textContent=fmt(platRemainP);
-    const c3=node.querySelector('.platRemainI'); if(c3) c3.textContent=fmt(platRemainI);
-    const c4=node.querySelector('.platThisMonth'); if(c4) c4.textContent=fmt(platThisMonth);
-    const c5=node.querySelector('.platNextDate'); if(c5) c5.textContent= plat.payDay ? nextPayDateByDay(+plat.payDay) : '—';
-    const c6=node.querySelector('.platNextPay'); if(c6) c6.textContent=fmt(platThisMonth);
+        // Event Listeners
+        addPlatformBtn.addEventListener('click', () => {
+            editingPlatform = null;
+            document.getElementById('platformModalTitle').textContent = '添加新平台';
+            document.getElementById('platformName').value = '';
+            document.getElementById('repaymentDay').value = '';
+            platformModal.classList.remove('hidden');
+        });
 
-    // 汇总行（用于上方总览）
-    overviewRows.push({payDay: plat.payDay?+plat.payDay:Infinity, payDayText: plat.payDay||'—', platformName: plat.name||'未命名平台', nextDate: plat.payDay? nextPayDateByDay(+plat.payDay) : '—', amount: platThisMonth, notes: plat.notes?.length||0});
+        addLoanBtn.addEventListener('click', () => {
+            editingLoan = null;
+            document.getElementById('loanModalTitle').textContent = '添加新借据';
+            document.getElementById('loanPlatformId').value = '';
+            document.getElementById('loanDescription').value = '';
+            document.getElementById('loanTotalAmount').value = '';
+            document.getElementById('loanTotalMonths').value = '';
+            document.getElementById('loanRepaidMonths').value = '';
+            document.getElementById('loanGracePeriod').value = '';
+            document.getElementById('loanRepaymentType').value = 'equal_principal_interest';
+            document.querySelector('input[name="loanInputMode"][value="rate"]').checked = true;
+            rateInput.classList.remove('hidden');
+            interestInput.classList.add('hidden');
+            document.getElementById('loanAnnualRate').value = '';
+            document.getElementById('loanTotalInterest').value = '';
+            loanModal.classList.remove('hidden');
+        });
 
-    host.appendChild(node);
-  });
+        cancelPlatformBtn.addEventListener('click', () => {
+            platformModal.classList.add('hidden');
+        });
 
-  const tp=document.getElementById('totalPrincipal'); if(tp) tp.textContent=fmt(totalP);
-  const ti=document.getElementById('totalInterest'); if(ti) ti.textContent=fmt(totalI);
-  const tm=document.getElementById('totalThisMonth'); if(tm) tm.textContent=fmt(totalThis);
-  const lc=document.getElementById('loanCount'); if(lc) lc.textContent=String(countNotes);
+        cancelLoanBtn.addEventListener('click', () => {
+            loanModal.classList.add('hidden');
+        });
 
-  // 还款日汇总（按日排序）
-  const ov=document.getElementById('overview');
-  if(ov){
-    if(overviewRows.length){
-      overviewRows.sort((a,b)=> (a.payDay===b.payDay? a.platformName.localeCompare(b.platformName) : a.payDay-b.payDay));
-      const rowsHtml = overviewRows.map(r=>`<tr><td>${r.payDayText}</td><td>${r.platformName}</td><td class="mono">${r.nextDate}</td><td class="mono" style="font-weight:700">${fmt(r.amount)}</td><td>${r.notes}</td></tr>`).join('');
-      ov.innerHTML = `<div style="overflow:auto"><table class="mono" style="width:100%"><thead><tr><th>每月还款日</th><th>平台</th><th>最近还款日</th><th>本期应还（平台）</th><th>借据数</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
-      ov.style.display='block';
-    } else { ov.style.display='none'; ov.innerHTML=''; }
-  }
+        loanInputModeRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (radio.value === 'rate') {
+                    rateInput.classList.remove('hidden');
+                    interestInput.classList.add('hidden');
+                } else {
+                    rateInput.classList.add('hidden');
+                    interestInput.classList.remove('hidden');
+                }
+            });
+        });
 
-  if(lastFocus){
-    if(lastFocus.scope==='plat'){
-      const nm= lastFocus.name==='name'?'platName':(lastFocus.name==='payDay'?'platPayDay':'platNote');
-      const el=document.querySelector(`[data-plat-id="${lastFocus.id}"] [name="${nm}"]`);
-      if(el){ el.focus({preventScroll:true}); if(typeof lastFocus.pos==='number'){ try{ el.setSelectionRange(lastFocus.pos,lastFocus.pos); }catch{} } }
-    } else if(lastFocus.scope==='note'){
-      const el=document.querySelector(`[data-plat-id="${lastFocus.platId}"] [data-note-id="${lastFocus.id}"] [name="${lastFocus.name}"]`);
-      if(el){ el.focus({preventScroll:true}); if(typeof lastFocus.pos==='number'){ try{ el.setSelectionRange(lastFocus.pos,lastFocus.pos); }catch{} } }
-    }
-  }
-}
+        platformForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const platformData = {
+                id: editingPlatform || Date.now(),
+                name: document.getElementById('platformName').value,
+                repaymentDay: parseInt(document.getElementById('repaymentDay').value)
+            };
+            
+            if (editingPlatform) {
+                platforms = platforms.map(p => p.id === editingPlatform ? platformData : p);
+            } else {
+                platformData.loans = [];
+                platforms.push(platformData);
+            }
+            
+            platformModal.classList.add('hidden');
+            renderPlatforms();
+            updateSummary();
+            updateMonthlySummary();
+            updatePlatformSelect();
+            showSaveNotification();
+        });
 
-function safeRender(){ try{ render(); } catch(e){ console.error('[render error]', e); requestAnimationFrame(()=>{ try{ render(); } catch(e2){ console.error('[render error 2nd]', e2); } }); } }
+        loanForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const loanData = {
+                id: editingLoan ? editingLoan.loanId : Date.now(),
+                description: document.getElementById('loanDescription').value,
+                totalAmount: parseFloat(document.getElementById('loanTotalAmount').value),
+                totalMonths: parseInt(document.getElementById('loanTotalMonths').value),
+                repaidMonths: parseInt(document.getElementById('loanRepaidMonths').value) || 0,
+                repaymentType: document.getElementById('loanRepaymentType').value,
+                inputMode: document.querySelector('input[name="loanInputMode"]:checked').value,
+                gracePeriod: parseInt(document.getElementById('loanGracePeriod').value) || 0
+            };
+            
+            if (loanData.inputMode === 'rate') {
+                loanData.annualRate = parseFloat(document.getElementById('loanAnnualRate').value);
+            } else {
+                loanData.totalInterest = parseFloat(document.getElementById('loanTotalInterest').value);
+            }
+            
+            const platformId = parseInt(document.getElementById('loanPlatformId').value);
+            
+            if (editingLoan) {
+                platforms = platforms.map(platform => {
+                    if (platform.id === platformId) {
+                        return {
+                            ...platform,
+                            loans: platform.loans.map(loan => loan.id === editingLoan.loanId ? loanData : loan)
+                        };
+                    }
+                    return platform;
+                });
+            } else {
+                platforms = platforms.map(platform => {
+                    if (platform.id === platformId) {
+                        return {
+                            ...platform,
+                            loans: [...platform.loans, loanData]
+                        };
+                    }
+                    return platform;
+                });
+            }
+            
+            loanModal.classList.add('hidden');
+            renderPlatforms();
+            updateSummary();
+            updateMonthlySummary();
+            showSaveNotification();
+        });
 
-/* ========= 启动 & 事件委托 ========= */
-(function boot(){
-  load();
-  safeRender();
-  const add=document.getElementById('addPlatform'); if(add) add.addEventListener('click', ()=>addPlatform());
-  const col=document.getElementById('collapseAll'); if(col) col.addEventListener('click', ()=>{ document.querySelectorAll('details').forEach(d=>d.open=false); });
-  const rst=document.getElementById('resetAll'); if(rst) rst.addEventListener('click', async ()=>{ if(await uiConfirm('确定清空本地所有数据？此操作不可恢复。')){ state.platforms=[]; save(); safeRender(); toast('已清空'); } });
-  const saveBtn=document.getElementById('saveBtn'); if(saveBtn) saveBtn.addEventListener('click', ()=>{ save(); toast('已保存'); });
-  const themeSel=document.getElementById('themeSelect'); if(themeSel){ themeSel.value=(localStorage.getItem(THEME_KEY)||'light'); themeSel.addEventListener('change', e=>applyTheme(e.target.value)); }
-
-  // 平台区域统一事件委托（新增/结清平台、结清借据等）
-  const container=document.getElementById('platforms');
-  if(container){
-    container.addEventListener('click', async (ev)=>{
-      const btn = ev.target.closest('[data-action]'); if(!btn) return;
-      const platNode = ev.target.closest('[data-plat-id]');
-      const platId = platNode ? platNode.getAttribute('data-plat-id') : null;
-      const act = btn.getAttribute('data-action');
-      if(act==='addNote'){ if(platId) addNote(platId); return; }
-      if(act==='settlePlatform' || act==='removePlatform'){
-        if(platId && await uiConfirm('确认将该平台结清并从列表移除？')) removePlatform(platId);
-        return;
-      }
-      if(act==='settleNote' || act==='removeNote'){
-        const noteNode = ev.target.closest('[data-note-id]');
-        const noteId = noteNode ? noteNode.getAttribute('data-note-id') : null;
-        if(platId && noteId && await uiConfirm('确认将此借据结清并从列表移除？')) removeNote(platId, noteId);
-        return;
-      }
-    });
-
-    // 平台输入（事件委托）
-    container.addEventListener('compositionstart', ()=>{ isComposing=true; }, true);
-    container.addEventListener('compositionend', (e)=>{ isComposing=false; const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
-    container.addEventListener('input', (e)=>{ if(isComposing) return; const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
-    container.addEventListener('change', (e)=>{ const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
-  }
-})();
-
-/* ========= 控制台小测试（不改动你的数据） ========= */
-(function tests(){
-  try{
-    const snap=JSON.stringify(state);
-    // 1) 小数解析
-    if(Math.abs(parseDecimalInput('6.8')-6.8)>1e-9) throw new Error('decimal dot parse');
-    if(Math.abs(parseDecimalInput('6,8')-6.8)>1e-9) throw new Error('decimal comma parse');
-    if(Math.abs(parseDecimalInput('6，8')-6.8)>1e-9) throw new Error('decimal cn-comma parse');
-    // 2) 只息期：前3期应还仅利息，本金为0
-    const P=120000, n=12, r=0.01; const sch=buildScheduleIO(P,n,'epi',r,3,'2024-01-10',15);
-    if(!(sch[0].principal===0 && sch[1].principal===0 && sch[2].principal===0)) throw new Error('io principal not zero in first months');
-    if(!(sch[3].principal>0)) throw new Error('io not switching to amortization');
-    // 3) 新增/结清平台
-    const before=state.platforms.length; addPlatform({name:'__TEST__',payDay:'15'}); if(state.platforms.length!==before+1) throw new Error('addPlatform fail');
-    const pid=state.platforms[state.platforms.length-1].id; removePlatform(pid); if(state.platforms.length!==before) throw new Error('removePlatform fail');
-    // 回滚
-    Object.assign(state, JSON.parse(snap)); save();
-    console.log('%c自测通过','color:green');
-  }catch(e){ console.warn('自测警告：', e.message); }
-})();
-</script>
+        // Initialize
+        updatePlatformSelect();
+        updateSummary();
+        updateMonthlySummary();
+    </script>
 </body>
 </html>
