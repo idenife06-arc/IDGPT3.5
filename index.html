@@ -222,12 +222,92 @@
     </div>
 
     <script>
-        // 数据存储
+        // 数据存储和持久化
         let platforms = [];
         let editingPlatform = null;
         let editingLoan = null;
         let selectedPlatformId = null;
         let expandedLoans = new Set();
+
+        // 安全的 localStorage 操作
+        function safeLocalStorageGet(key) {
+            try {
+                const item = localStorage.getItem(key);
+                return item ? JSON.parse(item) : null;
+            } catch (error) {
+                console.warn('localStorage get failed:', error);
+                return null;
+            }
+        }
+
+        function safeLocalStorageSet(key, value) {
+            try {
+                localStorage.setItem(key, JSON.stringify(value));
+                return true;
+            } catch (error) {
+                console.warn('localStorage set failed:', error);
+                return false;
+            }
+        }
+
+        // 从 localStorage 加载数据
+        function loadFromStorage() {
+            try {
+                const savedData = safeLocalStorageGet('debtManagementData');
+                if (savedData && savedData.platforms) {
+                    platforms = savedData.platforms;
+                    selectedPlatformId = savedData.selectedPlatformId || null;
+                    const savedExpandedLoans = savedData.expandedLoans || [];
+                    expandedLoans = new Set(savedExpandedLoans);
+                    console.log('数据加载成功:', platforms.length, '个平台');
+                } else {
+                    console.log('没有找到保存的数据');
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                platforms = [];
+            }
+        }
+
+        // 保存数据到 localStorage
+        function saveToStorage() {
+            try {
+                // 清理数据，确保没有循环引用
+                const cleanPlatforms = platforms.map(platform => {
+                    return {
+                        id: platform.id,
+                        name: platform.name,
+                        repaymentDay: platform.repaymentDay,
+                        loans: platform.loans.map(loan => ({
+                            id: loan.id,
+                            description: loan.description,
+                            totalAmount: loan.totalAmount,
+                            totalMonths: loan.totalMonths,
+                            repaidMonths: loan.repaidMonths || 0,
+                            repaymentType: loan.repaymentType,
+                            inputMode: loan.inputMode,
+                            gracePeriod: loan.gracePeriod || 0,
+                            annualRate: loan.annualRate,
+                            totalInterest: loan.totalInterest
+                        }))
+                    };
+                });
+                
+                const dataToSave = {
+                    platforms: cleanPlatforms,
+                    selectedPlatformId: selectedPlatformId,
+                    expandedLoans: Array.from(expandedLoans)
+                };
+                
+                if (safeLocalStorageSet('debtManagementData', dataToSave)) {
+                    console.log('数据保存成功');
+                } else {
+                    console.warn('数据保存失败，可能是 localStorage 已满');
+                }
+            } catch (error) {
+                console.error('保存数据失败:', error);
+            }
+        }
 
         // DOM 元素
         const saveNotification = document.getElementById('saveNotification');
@@ -839,6 +919,7 @@
                     renderPlatforms();
                     updateSummary();
                     updateMonthlySummary();
+                    saveToStorage();
                 });
             });
             
@@ -854,6 +935,7 @@
                         expandedLoans.add(loanId);
                     }
                     renderPlatforms();
+                    saveToStorage();
                 });
             });
             
@@ -882,6 +964,7 @@
                     updateSummary();
                     updateMonthlySummary();
                     updatePlatformSelect();
+                    saveToStorage();
                     showSaveNotification();
                 });
             });
@@ -945,6 +1028,7 @@
                     renderPlatforms();
                     updateSummary();
                     updateMonthlySummary();
+                    saveToStorage();
                     showSaveNotification();
                 });
             });
@@ -1059,6 +1143,7 @@
             updateSummary();
             updateMonthlySummary();
             updatePlatformSelect();
+            saveToStorage();
             showSaveNotification();
         });
 
@@ -1110,13 +1195,23 @@
             renderPlatforms();
             updateSummary();
             updateMonthlySummary();
+            saveToStorage();
             showSaveNotification();
         });
 
-        // Initialize
-        updatePlatformSelect();
-        updateSummary();
-        updateMonthlySummary();
+        // Initialize - 确保在页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromStorage();
+            updatePlatformSelect();
+            renderPlatforms();
+            updateSummary();
+            updateMonthlySummary();
+            
+            // 添加页面卸载前的保存
+            window.addEventListener('beforeunload', function() {
+                saveToStorage();
+            });
+        });
     </script>
 </body>
 </html>
