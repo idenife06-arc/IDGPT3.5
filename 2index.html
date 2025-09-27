@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>个人负债计算器</title>
+<style>
+  :root { --radius:14px; --shadow:0 10px 24px rgba(2,12,27,.06); }
+  body[data-theme="light"]{
+    --bg:#f6f8fb; --card:#fff; --text:#17202a; --muted:#4b5b6c; --accent:#2563eb; --danger:#dc2626; --ok:#059669;
+    --field-bg:#fff; --field-fg:#0f172a; --field-border:#cfd7e3; --field-placeholder:#64748b; --table-line:#e8edf3; --chip-bg:#eef2f7;
+  }
+  body[data-theme="dark"]{
+    --bg:#0b0f14; --card:#111824; --text:#eaf1f8; --muted:#8aa0b5; --accent:#4aa3ff; --danger:#ff6b6b; --ok:#34d399;
+    --field-bg:#172436; --field-fg:#eaf1f8; --field-border:#2b3b55; --field-placeholder:#9fb2c6; --table-line:#253247; --chip-bg:#1b2431; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  html,body{height:100%}
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,PingFang SC,Noto Sans CJK SC,Helvetica Neue,Arial,"Segoe UI Emoji";background:var(--bg);color:var(--text)}
+  .wrap{max-width:1200px;margin:28px auto;padding:0 20px}
+  header h1{font-size:24px;margin:0 0 6px}
+  header p{margin:0;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 22px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .k{color:var(--muted);font-size:12px}.v{font-weight:700;font-size:20px;margin-top:4px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{border:none;background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;box-shadow: var(--shadow)}
+  .btn.secondary{background:#e5eaf3;color:#0f172a} body[data-theme="dark"] .btn.secondary{background:#2a3342;color:var(--text)}
+  .btn.danger{background:var(--danger);color:#fff}.btn.ghost{background:transparent;border:1px solid var(--field-border);color:var(--text)}
+  .btn.ok{background:var(--ok);color:#fff}
+  .platforms{display:flex;flex-direction:column;gap:12px}
+  details.box{background:var(--card);border-radius:var(--radius);box-shadow: var(--shadow);overflow:hidden}
+  details.box>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+  details.box>summary::-webkit-details-marker{display:none}
+  .sum-title{display:flex;align-items:center;gap:10px}
+  .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--chip-bg);color:var(--muted)}
+  .section{padding:12px 16px 18px;border-top:1px solid var(--field-border)}
+  .form-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:12px;color:var(--muted)}
+  input,select,textarea{background:var(--field-bg);color:var(--field-fg);border:1px solid var(--field-border);border-radius:10px;padding:10px 10px;outline:none;caret-color:var(--field-fg)}
+  input::placeholder{color:var(--field-placeholder);opacity:1}
+  select:focus,input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.16)}
+  input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--field-fg);-webkit-box-shadow:0 0 0 1000px var(--field-bg) inset;box-shadow:0 0 0 1000px var(--field-bg) inset;transition:background-color 9999s ease-in-out 0s}
+  table{width:100%;border-collapse:collapse;background:var(--card)}
+  th,td{padding:8px 10px;border-bottom:1px dashed var(--table-line);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .foot{margin:24px 0 60px;color:var(--muted);font-size:12px;text-align:center}
+  .right{text-align:right}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+  /* ... 样式部分省略 ... */
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>个人负债计算器</h1>
+      <p>支持平台/借据分组、统一还款日、等额本息/等额本金、年化/总利息录入；支持只还利息（月）。本地保存，可选云同步。</p>
+    </header>
+
+    <section class="grid" id="dashboard">
+      <div class="card"><div class="k">总剩余本金</div><div class="v" id="totalPrincipal">¥0.00</div></div>
+      <div class="card"><div class="k">总剩余利息</div><div class="v" id="totalInterest">¥0.00</div></div>
+      <div class="card"><div class="k">本期应还总额</div><div class="v" id="totalThisMonth">¥0.00</div></div>
+      <div class="card"><div class="k">借据数量</div><div class="v" id="loanCount">0</div></div>
+    </section>
+
+    <div class="toolbar">
+      <button class="btn" id="addPlatform">＋ 新增平台</button>
+      <button class="btn secondary" id="collapseAll">全部折叠</button>
+      <button class="btn ghost" id="resetAll">清空数据</button>
+      <button class="btn ok" id="saveBtn">保存</button>
+      <button class="btn ghost" id="syncBtn">云同步</button>
+      <span style="margin-left:auto;color:var(--muted);font-size:12px;">外观</span>
+      <select id="themeSelect">
+        <option value="light">浅色</option><option value="dark">深色</option>
+      </select>
+    </div>
+
+    <section id="overview" class="card" style="margin:12px 0;display:none"></section>
+    <section class="platforms" id="platforms"></section>
+
+    <p class="foot">© 本工具不上传任何数据。</p>
+  </div>
+
+<script>
+// ... 这里放完整的 JavaScript 脚本（省略，直接用你画布中的完整JS） ...
+</script>
+</body>
+</html>
