@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>个人负债计算器</title>
+<style>
+  :root { --radius:14px; --shadow:0 10px 24px rgba(2,12,27,.06); }
+  body[data-theme="light"]{
+    --bg:#f6f8fb; --card:#fff; --text:#17202a; --muted:#4b5b6c; --accent:#2563eb; --danger:#dc2626; --ok:#059669;
+    --field-bg:#fff; --field-fg:#0f172a; --field-border:#cfd7e3; --field-placeholder:#64748b; --table-line:#e8edf3; --chip-bg:#eef2f7;
+  }
+  body[data-theme="dark"]{
+    --bg:#0b0f14; --card:#111824; --text:#eaf1f8; --muted:#8aa0b5; --accent:#4aa3ff; --danger:#ff6b6b; --ok:#34d399;
+    --field-bg:#172436; --field-fg:#eaf1f8; --field-border:#2b3b55; --field-placeholder:#9fb2c6; --table-line:#253247; --chip-bg:#1b2431; --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  html,body{height:100%}
+  body{margin:0;font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,PingFang SC,Noto Sans CJK SC,Helvetica Neue,Arial,"Segoe UI Emoji";background:var(--bg);color:var(--text)}
+  .wrap{max-width:1200px;margin:28px auto;padding:0 20px}
+  header h1{font-size:24px;margin:0 0 6px}
+  header p{margin:0;color:var(--muted)}
+  .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:18px 0 22px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .k{color:var(--muted);font-size:12px}.v{font-weight:700;font-size:20px;margin-top:4px}
+  .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .btn{border:none;background:var(--accent);color:#fff;border-radius:10px;padding:10px 14px;cursor:pointer;font-weight:600;box-shadow: var(--shadow)}
+  .btn.secondary{background:#e5eaf3;color:#0f172a} body[data-theme="dark"] .btn.secondary{background:#2a3342;color:var(--text)}
+  .btn.danger{background:var(--danger);color:#fff}.btn.ghost{background:transparent;border:1px solid var(--field-border);color:var(--text)}
+  .btn.ok{background:var(--ok);color:#fff}
+  .platforms{display:flex;flex-direction:column;gap:12px}
+  details.box{background:var(--card);border-radius:var(--radius);box-shadow: var(--shadow);overflow:hidden}
+  details.box>summary{list-style:none;cursor:pointer;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+  details.box>summary::-webkit-details-marker{display:none}
+  .sum-title{display:flex;align-items:center;gap:10px}
+  .pill{font-size:12px;padding:4px 8px;border-radius:999px;background:var(--chip-bg);color:var(--muted)}
+  .section{padding:12px 16px 18px;border-top:1px solid var(--field-border)}
+  .form-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:12px;color:var(--muted)}
+  input,select{background:var(--field-bg);color:var(--field-fg);border:1px solid var(--field-border);border-radius:10px;padding:10px 10px;outline:none;caret-color:var(--field-fg)}
+  input::placeholder{color:var(--field-placeholder);opacity:1}
+  select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.16)}
+  input:-webkit-autofill,input:-webkit-autofill:hover,input:-webkit-autofill:focus{-webkit-text-fill-color:var(--field-fg);-webkit-box-shadow:0 0 0 1000px var(--field-bg) inset;box-shadow:0 0 0 1000px var(--field-bg) inset;transition:background-color 9999s ease-in-out 0s}
+  table{width:100%;border-collapse:collapse;background:var(--card)}
+  th,td{padding:8px 10px;border-bottom:1px dashed var(--table-line);text-align:right}
+  th:first-child,td:first-child{text-align:left}
+  .foot{margin:24px 0 60px;color:var(--muted);font-size:12px;text-align:center}
+  .right{text-align:right}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace}
+  /* 轻量确认弹窗样式 + Toast */
+  .dlg-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;z-index:9999}
+  .dlg{background:var(--card);color:var(--text);border-radius:12px;box-shadow:var(--shadow);min-width:280px;max-width:90vw;padding:16px}
+  .dlg h3{margin:0 0 8px;font-size:16px}
+  .dlg p{margin:0 0 12px;color:var(--muted)}
+  .dlg .row{display:flex;gap:8px;justify-content:flex-end}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--card);color:var(--text);border:1px solid var(--field-border);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow);z-index:9999}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>个人负债计算器</h1>
+    <p>支持 <b>平台 → 借据</b> 分组、统一还款日、等额本息/等额本金、年化/总利息两种录入；支持“只还利息期”。本地保存，不上传。</p>
+  </header>
+
+  <section class="grid" id="dashboard">
+    <div class="card"><div class="k">总剩余本金</div><div class="v" id="totalPrincipal">¥0.00</div></div>
+    <div class="card"><div class="k">总剩余利息（估算）</div><div class="v" id="totalInterest">¥0.00</div></div>
+    <div class="card"><div class="k">本期应还总额（估算）</div><div class="v" id="totalThisMonth">¥0.00</div></div>
+    <div class="card"><div class="k">借据数量</div><div class="v" id="loanCount">0</div></div>
+  </section>
+
+  <div class="toolbar">
+    <button class="btn" id="addPlatform">＋ 新增平台</button>
+    <button class="btn secondary" id="collapseAll">全部折叠</button>
+    <button class="btn ghost" id="resetAll" title="仅清空本地缓存，不可恢复">清空数据</button>
+    <button class="btn ok" id="saveBtn" title="手动保存">保存</button>
+    <span style="margin-left:auto;color:var(--muted);font-size:12px;">外观</span>
+    <select id="themeSelect" title="切换外观">
+      <option value="light">浅色</option><option value="dark">深色</option>
+    </select>
+  </div>
+
+  <section id="overview" class="card" style="margin:12px 0;display:none"></section>
+
+  <section class="platforms" id="platforms"></section>
+
+  <p class="foot">© 本工具不上传任何数据。选择“剩余总利息”时，通过数值求解推算月利率以匹配总利息；支持“只还利息（月）”。</p>
+</div>
+
+<!-- 平台模板 -->
+<template id="platform-tpl">
+  <details class="box" open>
+    <summary>
+      <div class="sum-title">
+        <strong class="title">未命名平台</strong>
+        <span class="pill">固定还款日：<span class="platPayDay">—</span> 日</span>
+        <span class="pill">借据数：<span class="noteCount">0</span></span>
+      </div>
+      <div class="right">
+        <span class="k">本期应还（平台合计）</span>
+        <span class="v mono platNextPay">¥0.00</span>
+      </div>
+    </summary>
+
+    <div class="section">
+      <div class="form-grid">
+        <div class="field"><label>平台/机构</label><input name="platName" placeholder="例如：Bank A / 平台A"/></div>
+        <div class="field"><label>每月固定还款日 (1-28)</label><input name="platPayDay" type="number" min="1" max="28" step="1"/></div>
+        <div class="field"><label>平台备注（可选）</label><input name="platNote" placeholder="例如：所有借据统一在15号代扣"/></div>
+        <div class="field"><label>&nbsp;</label><button class="btn" data-action="addNote">＋ 新增借据</button></div>
+        <div class="field"><label>&nbsp;</label><button class="btn danger" data-action="settlePlatform">结清（删除）</button></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+        <div><div class="k">平台剩余本金合计</div><div class="v mono platRemainP">¥0.00</div></div>
+        <div><div class="k">平台剩余利息合计（估算）</div><div class="v mono platRemainI">¥0.00</div></div>
+        <div><div class="k">下期还款日（平台）</div><div class="v mono platNextDate">—</div></div>
+        <div><div class="k">本期应还（平台合计）</div><div class="v mono platThisMonth">¥0.00</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="platform-notes"></div>
+    </div>
+  </details>
+</template>
+
+<!-- 借据模板 -->
+<template id="note-tpl">
+  <details class="box" open>
+    <summary>
+      <div class="sum-title">
+        <strong class="title">借据</strong>
+        <span class="pill mode">—</span>
+        <span class="pill repay">—</span>
+      </div>
+      <div class="right"><span class="k">本期应还</span><span class="v mono nextPay">¥0.00</span></div>
+    </summary>
+
+    <div class="section">
+      <div class="form-grid">
+        <div class="field"><label>借据名称（可选）</label><input name="name" placeholder="例如：2024-01 借据"/></div>
+        <div class="field"><label>当前剩余本金</label><input name="principal" type="number" min="0" step="0.01" placeholder="100000"/></div>
+        <div class="field"><label>剩余期数（月）</label><input name="months" type="number" min="1" step="1" placeholder="36"/></div>
+        <div class="field"><label>还款方式</label>
+          <select name="repayType"><option value="epi">等额本息</option><option value="epr">等额本金</option></select>
+        </div>
+        <div class="field"><label>利息录入方式</label>
+          <select name="rateMode"><option value="apr">年化利率</option><option value="total">剩余总利息</option></select>
+        </div>
+        <div class="field rate-apr"><label>年化利率 %</label>
+          <input name="apr" type="text" inputmode="decimal" pattern="[0-9]*[\.,]?[0-9]*" placeholder="6.8"/>
+        </div>
+        <div class="field rate-total" style="display:none"><label>剩余总利息</label><input name="totalInterest" type="number" min="0" step="0.01" placeholder="例如 12800"/></div>
+        <div class="field"><label>只还利息（月）（剩余）</label><input name="ioMonths" type="number" min="0" step="1" placeholder="0"/></div>
+        <div class="field"><label>只息已发生（月）（记录用）</label><input name="ioDone" type="number" min="0" step="1" placeholder="0"/></div>
+        <div class="field"><label>起算日期</label><input name="startDate" type="date"/></div>
+        <div class="field"><label>&nbsp;</label><button class="btn danger" data-action="settleNote">结清（删除）</button></div>
+      </div>
+      <div class="warn" data-warn></div>
+    </div>
+
+    <div class="section">
+      <div class="grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">
+        <div><div class="k">剩余本金</div><div class="v mono remainP">¥0.00</div></div>
+        <div><div class="k">剩余利息（估算）</div><div class="v mono remainI">¥0.00</div></div>
+        <div><div class="k">每月应还（本期）</div><div class="v mono monthPay">¥0.00</div></div>
+        <div><div class="k">下期还款日</div><div class="v mono nextDate">—</div></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <details>
+        <summary><b>展开/收起 还款计划表（含只息期）</b></summary>
+        <div style="overflow:auto;margin-top:10px;">
+          <table class="mono schedule">
+            <thead><tr><th>期次</th><th>日期</th><th>当期应还</th><th>其中本金</th><th>其中利息</th><th>期末剩余本金</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </details>
+    </div>
+  </details>
+</template>
+
+<script>
+'use strict';
+/* ========= 主题 ========= */
+const THEME_KEY='debt-calc-theme';
+function applyTheme(t){
+  document.body.setAttribute('data-theme',t==='dark'?'dark':'light');
+  try{ localStorage.setItem(THEME_KEY,t==='dark'?'dark':'light'); }catch(e){}
+}
+(function initTheme(){ applyTheme(localStorage.getItem(THEME_KEY)||'light'); })();
+
+/* ========= 小工具 ========= */
+const fmt = (n)=>`¥${(Number(n)||0).toFixed(2)}`;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const uuid=(typeof crypto!=='undefined'&&crypto.randomUUID)?()=>crypto.randomUUID():()=>('id-'+Math.random().toString(16).slice(2)+Date.now());
+function toast(msg){ const t=document.createElement('div'); t.className='toast'; t.textContent=msg; document.body.appendChild(t); setTimeout(()=>{ t.style.opacity='0'; t.style.transition='opacity .25s linear'; setTimeout(()=>{ t.remove(); }, 280); }, 1200); }
+
+// 允许小数点/逗号/中文符号的解析（用于 APR 等）
+function parseDecimalInput(x){ if(typeof x==='number') return x; let s=(x||'').toString().trim(); s=s.replace(/％/g,'%').replace(/，/g,',').replace(/[．。]/g,'.'); s=s.replace(/\s/g,''); let core=s.replace(/[^0-9.,-]/g,''); if(core.includes(',') && !core.includes('.')) core=core.replace(/,/g,'.'); else core=core.replace(/,/g,''); const v=parseFloat(core); return isNaN(v)?0:v; }
+function parseNumber(x){ if(typeof x==='number') return x; let s=(x||'').toString().trim(); s=s.replace(/，/g,'').replace(/[\s,_]/g,'').replace(/[．。]/g,'.'); const v=parseFloat(s); return isNaN(v)?0:v; }
+
+// 自定义非阻塞确认弹窗（避免某些环境禁用 window.confirm）
+function uiConfirm(message){
+  return new Promise((resolve)=>{
+    try{ const ok = window.confirm(message); resolve(!!ok); }
+    catch(e){
+      const mask=document.createElement('div'); mask.className='dlg-mask';
+      const box=document.createElement('div'); box.className='dlg';
+      box.innerHTML=`<h3>请确认</h3><p>${message}</p><div class="row"><button class="btn secondary" data-act="no">取消</button><button class="btn danger" data-act="yes">确认</button></div>`;
+      mask.appendChild(box); document.body.appendChild(mask);
+      mask.addEventListener('click', (ev)=>{ if(ev.target===mask){ document.body.removeChild(mask); resolve(false); } });
+      box.querySelector('[data-act="no"]').addEventListener('click',()=>{ document.body.removeChild(mask); resolve(false); });
+      box.querySelector('[data-act="yes"]').addEventListener('click',()=>{ document.body.removeChild(mask); resolve(true); });
+    }
+  });
+}
+
+function nextPayDateByDay(day){
+  if(!day)return '—'; const today=new Date(); let y=today.getFullYear(),m=today.getMonth();
+  let last=new Date(y,m+1,0).getDate(); let cand=new Date(y,m,Math.min(day,Math.min(28,last)));
+  if(cand<today){ m++; if(m>11){m=0;y++} last=new Date(y,m+1,0).getDate(); cand=new Date(y,m,Math.min(day,Math.min(28,last))); }
+  return cand.toISOString().slice(0,10);
+}
+function nextPayDate(startDateStr, payDay){
+  if(payDay) return nextPayDateByDay(payDay);
+  if(!startDateStr) return '—'; const d0=new Date(startDateStr); const today=new Date();
+  let y=today.getFullYear(),m=today.getMonth(),day=d0.getDate();
+  let last=new Date(y,m+1,0).getDate(); let cand=new Date(y,m,Math.min(day,Math.min(28,last)));
+  if(cand<today){ m++; if(m>11){m=0;y++} last=new Date(y,m+1,0).getDate(); cand=new Date(y,m,Math.min(day,Math.min(28,last))); }
+  return cand.toISOString().slice(0,10);
+}
+
+/* ========= 贷款计算（含只息期） ========= */
+function totalInterestByRate(P,n,type,r){
+  if(r===0) return 0; let totalI=0;
+  if(type==='epr'){ let remain=P,principalMonth=P/n; for(let k=1;k<=n;k++){ const Ik=remain*r; totalI+=Ik; remain-=principalMonth; } }
+  else{ const A = P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); let remain=P;
+        for(let k=1;k<=n;k++){ const Ik=remain*r; const Mk=A-Ik; totalI+=Ik; remain=Math.max(0,remain-Mk); } }
+  return totalI;
+}
+function solveMonthlyRateByTotalInterest(P,n,type,I){
+  if(I<=0||P<=0||n<=0) return 0; let lo=0,hi=1;
+  for(let i=0;i<80;i++){ const mid=(lo+hi)/2; const It=totalInterestByRate(P,n,type,mid); if(It>I) hi=mid; else lo=mid; }
+  return (lo+hi)/2;
+}
+
+function buildScheduleIO(P,n,type,r,ioMonths,startDate,payDay){
+  ioMonths = Math.max(0, Math.min(n, Math.floor(+ioMonths||0)));
+  const rows=[]; let remain=P;
+  // 只息期
+  for(let k=1;k<=ioMonths;k++){
+    const interest = remain*r; const principal = 0; const pay = interest; const dateStr = dateForIndex(startDate,payDay,k);
+    rows.push({k, date: dateStr, pay, principal, interest, remain});
+  }
+  const n2 = n - ioMonths;
+  if(n2>0){
+    if(type==='epr'){
+      const principalMonth = P/n2;
+      for(let j=1;j<=n2;j++){
+        const k = ioMonths + j; const interest = remain*r; const principal = principalMonth; const pay = principal + interest; remain = Math.max(0, remain-principal);
+        const dateStr = dateForIndex(startDate,payDay,k);
+        rows.push({k, date: dateStr, pay, principal, interest, remain});
+      }
+    } else {
+      const A = (r>0)? P*r*Math.pow(1+r,n2)/(Math.pow(1+r,n2)-1) : (P/n2);
+      for(let j=1;j<=n2;j++){
+        const k = ioMonths + j; const interest = remain*r; const principal = (r>0)? (A - interest) : (P/n2); const pay = (r>0)? A : principal; remain = Math.max(0, remain-principal);
+        const dateStr = dateForIndex(startDate,payDay,k);
+        rows.push({k, date: dateStr, pay, principal, interest, remain});
+      }
+    }
+  }
+  return rows;
+}
+function dateForIndex(startDate,payDay,k){
+  if(!startDate) return '—'; const d0=new Date(startDate); const y=d0.getFullYear(); const m=d0.getMonth();
+  const base=new Date(y, m+(k-1), 1); const last=new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+  const day = payDay ? Math.max(1, Math.min(28, payDay)) : Math.min(28, d0.getDate()); base.setDate(Math.min(day,last,28)); return base.toISOString().slice(0,10);
+}
+
+function computeNote(note, platPayDay){
+  const P=parseNumber(note.principal)||0, n=Math.max(1,Math.floor(parseNumber(note.months)||0)), repayType=note.repayType;
+  let r;
+  if((note.rateMode||'apr')==='apr'){ r=(parseDecimalInput(note.apr)/100)/12; }
+  else { r=solveMonthlyRateByTotalInterest(P,n,repayType,parseNumber(note.totalInterest)||0); }
+  const ioM = Math.max(0, Math.min(n, Math.floor(parseNumber(note.ioMonths)||0)));
+  const schedule=buildScheduleIO(P,n,repayType,r,ioM,note.startDate,platPayDay||null);
+  const totalInterest=schedule.reduce((s,x)=>s+x.interest,0), thisMonthPay=schedule[0]?.pay||0;
+  const nextDate=nextPayDate(note.startDate, platPayDay||null);
+  return {r,schedule,totalInterest,thisMonthPay,nextDate};
+}
+
+/* ========= 状态与存储 ========= */
+const STORE_KEY='debt-calc-v4'; // 保持与上一版一致，避免丢数据
+const FIRST_RUN_KEY='debt-calc-first-run';
+const state={platforms:[]};
+function save(){ try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){ console.warn('保存失败',e); } }
+function load(){
+  try{
+    const raw=localStorage.getItem(STORE_KEY);
+    if(raw){ Object.assign(state, JSON.parse(raw)); return; }
+    if(!localStorage.getItem(FIRST_RUN_KEY)){
+      const pid=uuid();
+      state.platforms=[{id:pid,name:'示例平台',payDay:'',note:'',notes:[{id:uuid(),name:'示例借据',principal:100000,months:36,repayType:'epi',rateMode:'apr',apr:6.8,totalInterest:'',ioMonths:0,ioDone:0,startDate:new Date().toISOString().slice(0,10)}]}];
+      localStorage.setItem(FIRST_RUN_KEY,'1'); save();
+    }
+  }catch(e){ console.warn('读取失败',e); }
+}
+
+/* ========= CRUD ========= */
+function addPlatform(data){ if(!data) data={}; state.platforms.push(Object.assign({id:uuid(),name:'',payDay:'',note:'',notes:[]},data)); save(); safeRender(); }
+function removePlatform(id){ const i=state.platforms.findIndex(x=>x.id===id); if(i>=0){ state.platforms.splice(i,1); save(); safeRender(); } }
+function addNote(platId,data){ if(!data) data={}; const p=state.platforms.find(x=>x.id===platId); if(!p) return; p.notes.push(Object.assign({id:uuid(),name:'',principal:'',months:'',repayType:'epi',rateMode:'apr',apr:'',totalInterest:'',ioMonths:'',ioDone:'',startDate:''},data)); save(); safeRender(); }
+function removeNote(platId,noteId){ const p=state.platforms.find(x=>x.id===platId); if(!p) return; const i=p.notes.findIndex(n=>n.id===noteId); if(i>=0){ p.notes.splice(i,1); save(); safeRender(); } }
+
+/* ========= 输入体验 ========= */
+let raf=null,lastFocus=null,isComposing=false;
+function scheduleRender(){ if(raf) cancelAnimationFrame(raf); raf=requestAnimationFrame(()=>{raf=null; render();}); }
+function onChangePlatField(id,key,value,el){ const p=state.platforms.find(x=>x.id===id); if(!p) return; p[key]=value; save(); lastFocus={scope:'plat',id,name:key,pos: typeof el?.selectionStart==='number'?el.selectionStart:null}; scheduleRender(); }
+function onChangeNoteField(platId,noteId,key,value,el){ const p=state.platforms.find(x=>x.id===platId); if(!p) return; const n=p.notes.find(t=>t.id===noteId); if(!n) return; n[key]=value; save(); lastFocus={scope:'note',platId,id:noteId,name:key,pos: typeof el?.selectionStart==='number'?el.selectionStart:null}; scheduleRender(); }
+
+/* ========= 渲染 ========= */
+function render(){
+  const host=document.getElementById('platforms'); if(!host){ console.warn('missing #platforms'); return; } host.innerHTML='';
+  let totalP=0,totalI=0,totalThis=0,countNotes=0;
+  const overviewRows=[];
+
+  state.platforms.forEach(plat=>{
+    const tpl=document.getElementById('platform-tpl'); if(!tpl){ return; }
+    const node=tpl.content.firstElementChild.cloneNode(true);
+    node.setAttribute('data-plat-id',plat.id);
+    const $=sel=>node.querySelector(sel), set=(name,val)=>{ const el=node.querySelector(`[name="${name}"]`); if(el) el.value=val??''; };
+
+    set('platName',plat.name); set('platPayDay',plat.payDay); set('platNote',plat.note);
+    const title=$('.title'); if(title) title.textContent=plat.name||'未命名平台';
+    const ppd=$('.platPayDay'); if(ppd) ppd.textContent=plat.payDay||'—';
+
+    let platRemainP=0,platRemainI=0,platThisMonth=0;
+    let notesHost = node.querySelector('.platform-notes'); if(!notesHost){ notesHost=document.createElement('div'); notesHost.className='platform-notes'; node.appendChild(notesHost); }
+    notesHost.innerHTML='';
+
+    (plat.notes||[]).forEach(note=>{
+      const ntpl=document.getElementById('note-tpl'); if(!ntpl) return;
+      const nn=ntpl.content.firstElementChild.cloneNode(true);
+      nn.setAttribute('data-note-id',note.id);
+      const $$=sel=>nn.querySelector(sel), setN=(name,val)=>{ const el=nn.querySelector(`[name="${name}"]`); if(el) el.value=val??''; };
+
+      setN('name',note.name); setN('principal',note.principal); setN('months',note.months); setN('ioMonths',note.ioMonths); setN('ioDone',note.ioDone);
+      setN('repayType',note.repayType||'epi'); setN('rateMode',note.rateMode||'apr'); setN('apr',note.apr); setN('totalInterest',note.totalInterest); setN('startDate',note.startDate);
+
+      const toggleBoxes=()=>{ const isAPR=(nn.querySelector('[name="rateMode"]').value==='apr'); const ra=nn.querySelector('.rate-apr'); const rt=nn.querySelector('.rate-total'); if(ra) ra.style.display=isAPR?'':'none'; if(rt) rt.style.display=isAPR?'none':''; };
+      toggleBoxes();
+
+      const warn=$$('[data-warn]'); if(warn) warn.textContent='';
+      let c={r:0,schedule:[],totalInterest:0,thisMonthPay:0,nextDate:'—'};
+      try{ const principal=parseNumber(note.principal), months=parseNumber(note.months); if(principal>0&&months>0){ c=computeNote(note, plat.payDay?+plat.payDay:null); } }
+      catch(e){ if(warn) warn.textContent='计算出错：'+e.message; }
+
+      platRemainP+=(parseNumber(note.principal)||0); platRemainI+=c.totalInterest||0; platThisMonth+=c.thisMonthPay||0;
+      totalP+=(parseNumber(note.principal)||0); totalI+=c.totalInterest||0; totalThis+=c.thisMonthPay||0; countNotes++;
+
+      const t1=nn.querySelector('.title'); if(t1) t1.textContent=note.name||'借据';
+      const t2=nn.querySelector('.mode'); if(t2) t2.textContent=(note.rateMode==='total'?'按剩余总利息':'按年化利率');
+      const t3=nn.querySelector('.repay'); if(t3) t3.textContent=(note.repayType==='epr'?'等额本金':'等额本息');
+      const t4=nn.querySelector('.nextPay'); if(t4) t4.textContent=fmt(c.thisMonthPay);
+      const rp=nn.querySelector('.remainP'); if(rp) rp.textContent=fmt(parseNumber(note.principal)||0);
+      const ri=nn.querySelector('.remainI'); if(ri) ri.textContent=fmt(c.totalInterest||0);
+      const mp=nn.querySelector('.monthPay'); if(mp) mp.textContent=fmt(c.thisMonthPay||0);
+      const nd=nn.querySelector('.nextDate'); if(nd) nd.textContent=c.nextDate||'—';
+
+      const tbody=nn.querySelector('.schedule tbody'); if(tbody){ tbody.innerHTML=''; c.schedule.forEach(row=>{ const tr=document.createElement('tr'); [row.k,row.date,fmt(row.pay),fmt(row.principal),fmt(row.interest),fmt(row.remain)].forEach(t=>{ const td=document.createElement('td'); td.textContent=t; tr.appendChild(td); }); tbody.appendChild(tr); }); }
+
+      // 输入绑定
+      nn.querySelectorAll('input,select').forEach(el=>{
+        el.addEventListener('compositionstart',()=>{isComposing=true;});
+        el.addEventListener('compositionend',e=>{isComposing=false; const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
+        el.addEventListener('input',e=>{ if(isComposing) return; const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
+        el.addEventListener('change',e=>{ const name=e.target.getAttribute('name'); onChangeNoteField(plat.id,note.id,name,e.target.value,e.target);});
+      });
+      nn.querySelector('[name="rateMode"]').addEventListener('change',toggleBoxes);
+
+      notesHost.appendChild(nn);
+    });
+
+    const c1=node.querySelector('.noteCount'); if(c1) c1.textContent=String(plat.notes?.length||0);
+    const c2=node.querySelector('.platRemainP'); if(c2) c2.textContent=fmt(platRemainP);
+    const c3=node.querySelector('.platRemainI'); if(c3) c3.textContent=fmt(platRemainI);
+    const c4=node.querySelector('.platThisMonth'); if(c4) c4.textContent=fmt(platThisMonth);
+    const c5=node.querySelector('.platNextDate'); if(c5) c5.textContent= plat.payDay ? nextPayDateByDay(+plat.payDay) : '—';
+    const c6=node.querySelector('.platNextPay'); if(c6) c6.textContent=fmt(platThisMonth);
+
+    // 汇总行（用于上方总览）
+    overviewRows.push({payDay: plat.payDay?+plat.payDay:Infinity, payDayText: plat.payDay||'—', platformName: plat.name||'未命名平台', nextDate: plat.payDay? nextPayDateByDay(+plat.payDay) : '—', amount: platThisMonth, notes: plat.notes?.length||0});
+
+    host.appendChild(node);
+  });
+
+  const tp=document.getElementById('totalPrincipal'); if(tp) tp.textContent=fmt(totalP);
+  const ti=document.getElementById('totalInterest'); if(ti) ti.textContent=fmt(totalI);
+  const tm=document.getElementById('totalThisMonth'); if(tm) tm.textContent=fmt(totalThis);
+  const lc=document.getElementById('loanCount'); if(lc) lc.textContent=String(countNotes);
+
+  // 还款日汇总（按日排序）
+  const ov=document.getElementById('overview');
+  if(ov){
+    if(overviewRows.length){
+      overviewRows.sort((a,b)=> (a.payDay===b.payDay? a.platformName.localeCompare(b.platformName) : a.payDay-b.payDay));
+      const rowsHtml = overviewRows.map(r=>`<tr><td>${r.payDayText}</td><td>${r.platformName}</td><td class="mono">${r.nextDate}</td><td class="mono" style="font-weight:700">${fmt(r.amount)}</td><td>${r.notes}</td></tr>`).join('');
+      ov.innerHTML = `<div style="overflow:auto"><table class="mono" style="width:100%"><thead><tr><th>每月还款日</th><th>平台</th><th>最近还款日</th><th>本期应还（平台）</th><th>借据数</th></tr></thead><tbody>${rowsHtml}</tbody></table></div>`;
+      ov.style.display='block';
+    } else { ov.style.display='none'; ov.innerHTML=''; }
+  }
+
+  if(lastFocus){
+    if(lastFocus.scope==='plat'){
+      const nm= lastFocus.name==='name'?'platName':(lastFocus.name==='payDay'?'platPayDay':'platNote');
+      const el=document.querySelector(`[data-plat-id="${lastFocus.id}"] [name="${nm}"]`);
+      if(el){ el.focus({preventScroll:true}); if(typeof lastFocus.pos==='number'){ try{ el.setSelectionRange(lastFocus.pos,lastFocus.pos); }catch{} } }
+    } else if(lastFocus.scope==='note'){
+      const el=document.querySelector(`[data-plat-id="${lastFocus.platId}"] [data-note-id="${lastFocus.id}"] [name="${lastFocus.name}"]`);
+      if(el){ el.focus({preventScroll:true}); if(typeof lastFocus.pos==='number'){ try{ el.setSelectionRange(lastFocus.pos,lastFocus.pos); }catch{} } }
+    }
+  }
+}
+
+function safeRender(){ try{ render(); } catch(e){ console.error('[render error]', e); requestAnimationFrame(()=>{ try{ render(); } catch(e2){ console.error('[render error 2nd]', e2); } }); } }
+
+/* ========= 启动 & 事件委托 ========= */
+(function boot(){
+  load();
+  safeRender();
+  const add=document.getElementById('addPlatform'); if(add) add.addEventListener('click', ()=>addPlatform());
+  const col=document.getElementById('collapseAll'); if(col) col.addEventListener('click', ()=>{ document.querySelectorAll('details').forEach(d=>d.open=false); });
+  const rst=document.getElementById('resetAll'); if(rst) rst.addEventListener('click', async ()=>{ if(await uiConfirm('确定清空本地所有数据？此操作不可恢复。')){ state.platforms=[]; save(); safeRender(); toast('已清空'); } });
+  const saveBtn=document.getElementById('saveBtn'); if(saveBtn) saveBtn.addEventListener('click', ()=>{ save(); toast('已保存'); });
+  const themeSel=document.getElementById('themeSelect'); if(themeSel){ themeSel.value=(localStorage.getItem(THEME_KEY)||'light'); themeSel.addEventListener('change', e=>applyTheme(e.target.value)); }
+
+  // 平台区域统一事件委托（新增/结清平台、结清借据等）
+  const container=document.getElementById('platforms');
+  if(container){
+    container.addEventListener('click', async (ev)=>{
+      const btn = ev.target.closest('[data-action]'); if(!btn) return;
+      const platNode = ev.target.closest('[data-plat-id]');
+      const platId = platNode ? platNode.getAttribute('data-plat-id') : null;
+      const act = btn.getAttribute('data-action');
+      if(act==='addNote'){ if(platId) addNote(platId); return; }
+      if(act==='settlePlatform' || act==='removePlatform'){
+        if(platId && await uiConfirm('确认将该平台结清并从列表移除？')) removePlatform(platId);
+        return;
+      }
+      if(act==='settleNote' || act==='removeNote'){
+        const noteNode = ev.target.closest('[data-note-id]');
+        const noteId = noteNode ? noteNode.getAttribute('data-note-id') : null;
+        if(platId && noteId && await uiConfirm('确认将此借据结清并从列表移除？')) removeNote(platId, noteId);
+        return;
+      }
+    });
+
+    // 平台输入（事件委托）
+    container.addEventListener('compositionstart', ()=>{ isComposing=true; }, true);
+    container.addEventListener('compositionend', (e)=>{ isComposing=false; const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
+    container.addEventListener('input', (e)=>{ if(isComposing) return; const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
+    container.addEventListener('change', (e)=>{ const el=e.target; if(!el||!el.getAttribute) return; const nm=el.getAttribute('name'); if(!nm) return; const platNode = el.closest('[data-plat-id]'); if(!platNode) return; const pid=platNode.getAttribute('data-plat-id'); const key=(nm==='platName'?'name':(nm==='platPayDay'?'payDay':'note')); onChangePlatField(pid,key,el.value,el); }, true);
+  }
+})();
+
+/* ========= 控制台小测试（不改动你的数据） ========= */
+(function tests(){
+  try{
+    const snap=JSON.stringify(state);
+    // 1) 小数解析
+    if(Math.abs(parseDecimalInput('6.8')-6.8)>1e-9) throw new Error('decimal dot parse');
+    if(Math.abs(parseDecimalInput('6,8')-6.8)>1e-9) throw new Error('decimal comma parse');
+    if(Math.abs(parseDecimalInput('6，8')-6.8)>1e-9) throw new Error('decimal cn-comma parse');
+    // 2) 只息期：前3期应还仅利息，本金为0
+    const P=120000, n=12, r=0.01; const sch=buildScheduleIO(P,n,'epi',r,3,'2024-01-10',15);
+    if(!(sch[0].principal===0 && sch[1].principal===0 && sch[2].principal===0)) throw new Error('io principal not zero in first months');
+    if(!(sch[3].principal>0)) throw new Error('io not switching to amortization');
+    // 3) 新增/结清平台
+    const before=state.platforms.length; addPlatform({name:'__TEST__',payDay:'15'}); if(state.platforms.length!==before+1) throw new Error('addPlatform fail');
+    const pid=state.platforms[state.platforms.length-1].id; removePlatform(pid); if(state.platforms.length!==before) throw new Error('removePlatform fail');
+    // 回滚
+    Object.assign(state, JSON.parse(snap)); save();
+    console.log('%c自测通过','color:green');
+  }catch(e){ console.warn('自测警告：', e.message); }
+})();
+</script>
+</body>
+</html>
